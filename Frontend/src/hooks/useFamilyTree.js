@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { TREE_CONSTANTS } from '../constants/treeConstants';
 import familyTreeAPI from '../services/api';
+import articlesAPI from '../services/articlesApi'; // НОВЫЙ ИМПОРТ
 
 export const useFamilyTree = () => {
   // Основное состояние
@@ -27,7 +28,8 @@ export const useFamilyTree = () => {
     isOpen: false,
     person: null,
     isSpouse: false,
-    personId: null
+    personId: null,
+    articles: [] // НОВОЕ ПОЛЕ ДЛЯ СТАТЕЙ
   });
 
   // НОВОЕ СОСТОЯНИЕ: Модальное окно редактирования
@@ -112,6 +114,33 @@ export const useFamilyTree = () => {
       setLoading(false);
     }
   }, []);
+
+  // НОВАЯ ФУНКЦИЯ: Загрузка статей персоны
+  const loadPersonArticles = useCallback(async (personId) => {
+    try {
+      const articles = await articlesAPI.getPersonArticles(personId);
+      return articles;
+    } catch (error) {
+      console.error('Ошибка загрузки статей персоны:', error);
+      return [];
+    }
+  }, []);
+
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Установка модального окна персоны с загрузкой статей
+  const setPersonInfoModalWithArticles = useCallback(async (modalData) => {
+    if (modalData.isOpen && modalData.personId) {
+      const articles = await loadPersonArticles(modalData.personId);
+      setPersonInfoModal({
+        ...modalData,
+        articles: articles
+      });
+    } else {
+      setPersonInfoModal({
+        ...modalData,
+        articles: []
+      });
+    }
+  }, [loadPersonArticles]);
 
   // Показать уведомление
   const showNotification = useCallback((message, type = 'error') => {
@@ -229,7 +258,8 @@ export const useFamilyTree = () => {
         isOpen: false,
         person: null,
         isSpouse: false,
-        personId: null
+        personId: null,
+        articles: []
       });
       
     } catch (error) {
@@ -266,7 +296,8 @@ export const useFamilyTree = () => {
         isOpen: false,
         person: null,
         isSpouse: false,
-        personId: null
+        personId: null,
+        articles: []
       });
       
     } catch (error) {
@@ -484,7 +515,8 @@ export const useFamilyTree = () => {
       isOpen: false,
       person: null,
       isSpouse: false,
-      personId: null
+      personId: null,
+      articles: []
     });
     setEditModal({
       isOpen: false,
@@ -521,9 +553,9 @@ export const useFamilyTree = () => {
     notification,
     hiddenGenerations,
     selectedBranch,
-    setSelectedBranch, // ← ВОТ ЭТА СТРОКА БЫЛА ПРОПУЩЕНА!
+    setSelectedBranch,
     personInfoModal,
-    setPersonInfoModal,
+    setPersonInfoModal: setPersonInfoModalWithArticles, // ОБНОВЛЕННАЯ ФУНКЦИЯ
     editModal,
     setEditModal,
     spouseModal,
