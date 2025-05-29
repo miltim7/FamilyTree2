@@ -521,6 +521,7 @@ export const useFamilyTree = () => {
     notification,
     hiddenGenerations,
     selectedBranch,
+    setSelectedBranch, // ← ВОТ ЭТА СТРОКА БЫЛА ПРОПУЩЕНА!
     personInfoModal,
     setPersonInfoModal,
     editModal,
