@@ -1,3 +1,5 @@
+// Frontend\src\constants\treeConstants.js
+
 // Константы для размеров и отступов
 export const TREE_CONSTANTS = {
   PERSON_WIDTH: 200,

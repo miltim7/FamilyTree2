@@ -1,3 +1,5 @@
+// Frontend\src\App.js
+
 import React from 'react';
 import FamilyTree from './components/FamilyTree';
 import './App.css';

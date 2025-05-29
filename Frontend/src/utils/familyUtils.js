@@ -1,3 +1,5 @@
+// Frontend\src\utils\familyUtils.js
+
 // Функция поиска персоны по ID
 export const findPersonById = (root, id) => {
   if (!root || !id) return null;

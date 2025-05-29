@@ -1,4 +1,4 @@
-// src/components/FamilyTree.jsx
+// Frontend\src\components\FamilyTree.jsx
 
 import React, { useState, useEffect } from 'react';
 import { STYLES } from '../constants/treeConstants';

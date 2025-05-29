@@ -1,3 +1,5 @@
+// Frontend\src\components\TreeConnections.jsx
+
 import React from 'react';
 import { NODE_STYLES } from '../constants/treeConstants';
 

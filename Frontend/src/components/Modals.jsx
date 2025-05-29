@@ -1,3 +1,5 @@
+// Frontend\src\components\Modals.jsx
+
 import React from 'react';
 import { STYLES, NODE_STYLES } from '../constants/treeConstants';
 

@@ -1,3 +1,5 @@
+// Frontend\src\components\PersonNode.jsx
+
 import React from 'react';
 import { NODE_STYLES } from '../constants/treeConstants';
 import { findPersonById } from '../utils/familyUtils';
