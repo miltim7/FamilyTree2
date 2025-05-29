@@ -58,6 +58,69 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
     }
   }, [treeLayout, boundaries, scale]);
 
+  // НОВЫЕ ФУНКЦИИ: Программное управление навигацией
+  const moveStep = 100; // Шаг перемещения в пикселях
+
+  const moveUp = useCallback(() => {
+    setPosition(prev => ({ ...prev, y: prev.y + moveStep }));
+    setUserMovedTree(true);
+  }, []);
+
+  const moveDown = useCallback(() => {
+    setPosition(prev => ({ ...prev, y: prev.y - moveStep }));
+    setUserMovedTree(true);
+  }, []);
+
+  const moveLeft = useCallback(() => {
+    setPosition(prev => ({ ...prev, x: prev.x + moveStep }));
+    setUserMovedTree(true);
+  }, []);
+
+  const moveRight = useCallback(() => {
+    setPosition(prev => ({ ...prev, x: prev.x - moveStep }));
+    setUserMovedTree(true);
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    if (!svgRef.current) return;
+    
+    const newScale = Math.min(scale * ZOOM_FACTOR, MAX_SCALE);
+    if (newScale === scale) return;
+    
+    // Зумируем к центру экрана
+    const rect = svgRef.current.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const factor = newScale / scale;
+    const newX = centerX - factor * (centerX - position.x);
+    const newY = centerY - factor * (centerY - position.y);
+    
+    setScale(newScale);
+    setPosition({ x: newX, y: newY });
+    setUserMovedTree(true);
+  }, [scale, position]);
+
+  const zoomOut = useCallback(() => {
+    if (!svgRef.current) return;
+    
+    const newScale = Math.max(scale / ZOOM_FACTOR, MIN_SCALE);
+    if (newScale === scale) return;
+    
+    // Зумируем к центру экрана
+    const rect = svgRef.current.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    
+    const factor = newScale / scale;
+    const newX = centerX - factor * (centerX - position.x);
+    const newY = centerY - factor * (centerY - position.y);
+    
+    setScale(newScale);
+    setPosition({ x: newX, y: newY });
+    setUserMovedTree(true);
+  }, [scale, position]);
+
   // Центрирование при изменении макета
   useEffect(() => {
     if (treeLayout && !lockPosition && !userMovedTree) {
@@ -150,6 +213,7 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
         
         setScale(newScale);
         setPosition({ x: newX, y: newY });
+        setUserMovedTree(true);
       }
     };
 
@@ -193,5 +257,12 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
     centerTree,
     handleMouseDown,
     handleDoubleClick,
+    // НОВЫЕ ФУНКЦИИ НАВИГАЦИИ
+    moveUp,
+    moveDown,
+    moveLeft,
+    moveRight,
+    zoomIn,
+    zoomOut,
   };
 };

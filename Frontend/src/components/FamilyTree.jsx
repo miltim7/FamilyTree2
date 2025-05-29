@@ -336,7 +336,251 @@ const FamilyTree = () => {
         )}
       </h1>
       
-      <div style={STYLES.svgContainer} data-svg-container="true">
+      {/* ИСПРАВЛЕННЫЙ БЛОК: Кнопки к границам и ниже */}
+      <div style={{
+        position: 'relative',
+        width: '100%',
+        marginBottom: '1rem',
+        marginLeft: '30px',
+        height: '60px' // Увеличиваем высоту для размещения кнопок ниже
+      }}>
+        
+        {/* ЛЕВАЯ ГРУППА: К САМОЙ ЛЕВОЙ ГРАНИЦЕ И НИЖЕ */}
+        <div style={{
+          position: 'absolute',
+          left: '-1rem', // Сдвигаем еще левее
+          top: '30px', // Опускаем кнопки ниже
+          display: 'flex',
+          gap: '0.5rem',
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}>
+          {/* Основные кнопки */}
+          <button
+            onClick={familyTreeState.openChildModal}
+            style={{ 
+              ...STYLES.button, 
+              ...STYLES.greenButton,
+              opacity: familyTreeState.loading ? 0.5 : 1,
+              fontSize: '0.875rem',
+              padding: '0.4rem 0.8rem'
+            }}
+            disabled={familyTreeState.loading}
+          >
+            Добавить ребенка
+          </button>
+          
+          <button
+            onClick={familyTreeState.openSpouseModal}
+            style={{ 
+              ...STYLES.button, 
+              ...STYLES.purpleButton,
+              opacity: familyTreeState.loading ? 0.5 : 1,
+              fontSize: '0.875rem',
+              padding: '0.4rem 0.8rem'
+            }}
+            disabled={familyTreeState.loading}
+          >
+            Добавить супруга(-у)
+          </button>
+
+          {/* Дополнительные кнопки */}
+          <button
+            onClick={navigationState.centerTree}
+            style={{ 
+              ...STYLES.button, 
+              ...STYLES.defaultViewButton,
+              fontSize: '0.875rem',
+              padding: '0.4rem 0.8rem'
+            }}
+          >
+            Центрировать
+          </button>
+          
+          <button
+            onClick={familyTreeState.loadFamilyData}
+            style={{ 
+              ...STYLES.button, 
+              ...STYLES.grayButton,
+              opacity: familyTreeState.loading ? 0.5 : 1,
+              fontSize: '0.875rem',
+              padding: '0.4rem 0.8rem'
+            }}
+            disabled={familyTreeState.loading}
+          >
+            {familyTreeState.loading ? 'Загрузка...' : 'Обновить'}
+          </button>
+          
+          {/* Условные кнопки */}
+          {familyTreeState.selectedBranch && (
+            <button
+              onClick={() => familyTreeState.setSelectedBranch(null)}
+              style={{ 
+                ...STYLES.button, 
+                ...STYLES.defaultViewButton,
+                fontSize: '0.875rem',
+                padding: '0.4rem 0.8rem'
+              }}
+            >
+              Показать всех
+            </button>
+          )}
+          
+          {Object.keys(familyTreeState.hiddenGenerations).length > 0 && (
+            <button
+              onClick={familyTreeState.resetHiddenGenerations}
+              style={{ 
+                ...STYLES.button, 
+                ...STYLES.defaultViewButton,
+                fontSize: '0.875rem',
+                padding: '0.4rem 0.8rem'
+              }}
+            >
+              Вид по умолчанию
+            </button>
+          )}
+        </div>
+
+        {/* ПРАВАЯ ГРУППА: К САМОЙ ПРАВОЙ ГРАНИЦЕ И НИЖЕ */}
+        <div style={{
+          position: 'absolute',
+          right: '20px', // Сдвигаем еще правее
+          top: '30px', // Опускаем кнопки ниже
+          display: 'flex',
+          gap: '0.25rem',
+          alignItems: 'center'
+        }}>
+          
+          {/* Навигационные кнопки в ряд */}
+          
+          {/* 1. Стрелка вверх */}
+          <button
+            onClick={navigationState.moveUp}
+            style={{
+              ...STYLES.button,
+              ...STYLES.defaultViewButton,
+              padding: '0.5rem',
+              minWidth: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Переместить вверх"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* 2. Стрелка влево */}
+          <button
+            onClick={navigationState.moveLeft}
+            style={{
+              ...STYLES.button,
+              ...STYLES.defaultViewButton,
+              padding: '0.5rem',
+              minWidth: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Переместить влево"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* 3. Стрелка вниз */}
+          <button
+            onClick={navigationState.moveDown}
+            style={{
+              ...STYLES.button,
+              ...STYLES.defaultViewButton,
+              padding: '0.5rem',
+              minWidth: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Переместить вниз"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* 4. Стрелка вправо */}
+          <button
+            onClick={navigationState.moveRight}
+            style={{
+              ...STYLES.button,
+              ...STYLES.defaultViewButton,
+              padding: '0.5rem',
+              minWidth: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Переместить вправо"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* 5. Кнопка зума + */}
+          <button
+            onClick={navigationState.zoomIn}
+            style={{
+              ...STYLES.button,
+              ...STYLES.defaultViewButton,
+              padding: '0.5rem',
+              minWidth: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Увеличить масштаб"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {/* 6. Кнопка зума - */}
+          <button
+            onClick={navigationState.zoomOut}
+            style={{
+              ...STYLES.button,
+              ...STYLES.defaultViewButton,
+              padding: '0.5rem',
+              minWidth: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Уменьшить масштаб"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      {/* Контейнер с тонкой границей */}
+      <div style={{
+        ...STYLES.svgContainer,
+        border: '1px solid #c0a282',
+        boxShadow: '0 4px 6px -1px rgba(48, 49, 51, 0.1), 0 2px 4px -1px rgba(48, 49, 51, 0.06)'
+      }} data-svg-container="true">
         {familyTreeState.selectionMode && (
           <div style={STYLES.activeMode}>
             {familyTreeState.selectionMode === 'parent' ? 'Режим выбора родителя' : 'Режим выбора персоны для супруга'}
@@ -360,81 +604,6 @@ const FamilyTree = () => {
           </g>
         </svg>
       </div>
-      
-      {/* Кнопки управления */}
-      <div style={STYLES.buttonsContainer}>
-        <button
-          onClick={familyTreeState.openChildModal}
-          style={{ 
-            ...STYLES.button, 
-            ...STYLES.greenButton,
-            opacity: familyTreeState.loading ? 0.5 : 1
-          }}
-          disabled={familyTreeState.loading}
-        >
-          Добавить ребенка
-        </button>
-        
-        <button
-          onClick={familyTreeState.openSpouseModal}
-          style={{ 
-            ...STYLES.button, 
-            ...STYLES.purpleButton,
-            opacity: familyTreeState.loading ? 0.5 : 1
-          }}
-          disabled={familyTreeState.loading}
-        >
-          Добавить супруга(-у)
-        </button>
-        
-        {familyTreeState.selectedBranch && (
-          <button
-            onClick={() => familyTreeState.setSelectedBranch(null)}
-            style={{ ...STYLES.button, ...STYLES.defaultViewButton }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Показать всех родственников
-          </button>
-        )}
-        
-        {Object.keys(familyTreeState.hiddenGenerations).length > 0 && (
-          <button
-            onClick={familyTreeState.resetHiddenGenerations}
-            style={{ ...STYLES.button, ...STYLES.defaultViewButton }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12Z" stroke="currentColor" strokeWidth="2" fill="none"/>
-              <path d="M12 8V16M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Вид по умолчанию
-          </button>
-        )}
-        
-        <button
-          onClick={navigationState.centerTree}
-          style={{ ...STYLES.button, ...STYLES.defaultViewButton }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 4L12 20M20 12L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            <path d="M17 7L7 17M7 7L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Центрировать
-        </button>
-        
-        <button
-          onClick={familyTreeState.loadFamilyData}
-          style={{ 
-            ...STYLES.button, 
-            ...STYLES.grayButton,
-            opacity: familyTreeState.loading ? 0.5 : 1
-          }}
-          disabled={familyTreeState.loading}
-        >
-          {familyTreeState.loading ? 'Загрузка...' : 'Обновить'}
-        </button>
-      </div>
 
       {/* Инструкция */}
       <div style={STYLES.instructionPanel}>
@@ -445,6 +614,7 @@ const FamilyTree = () => {
           <li style={STYLES.instructionItem}><strong>Кликните на карточку персоны</strong> - откроется модальное окно с подробной информацией</li>
           <li style={STYLES.instructionItem}><strong>В модальном окне персоны</strong> доступны кнопки "Редактировать" и "Удалить"</li>
           <li style={STYLES.instructionItem}><strong>При добавлении фото</strong> можно перетащить файл в область загрузки или выбрать через кнопку</li>
+          <li style={STYLES.instructionItem}><strong>Используйте навигационные кнопки</strong> справа для перемещения дерева стрелками и изменения масштаба</li>
           <li style={STYLES.instructionItem}>Кликните на кнопку '-' на линии, чтобы скрыть поколение</li>
           <li style={STYLES.instructionItem}>Кликните на кнопку '+' на пунктирной линии, чтобы показать скрытое поколение</li>
           <li style={STYLES.instructionItem}><strong>Наведите на карточку персоны</strong> - появится иконка дерева в правом верхнем углу</li>
