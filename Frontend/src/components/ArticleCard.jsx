@@ -1,8 +1,11 @@
 // Frontend\src\components\ArticleCard.jsx
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const ArticleCard = ({ article, onClick }) => {
+const ArticleCard = ({ article }) => {
+  const navigate = useNavigate();
+
   const cardStyle = {
     backgroundColor: 'white',
     borderRadius: '0.5rem',
@@ -69,17 +72,21 @@ const ArticleCard = ({ article, onClick }) => {
     });
   };
 
+  const handleClick = () => {
+    navigate(`/articles/${article.id}`);
+  };
+
   return (
     <div
       style={cardStyle}
-      onClick={onClick}
+      onClick={handleClick}
       onMouseEnter={(e) => {
-        e.target.style.transform = 'translateY(-4px)';
-        e.target.style.boxShadow = '0 10px 15px -3px rgba(48, 49, 51, 0.1), 0 4px 6px -2px rgba(48, 49, 51, 0.05)';
+        e.currentTarget.style.transform = 'translateY(-4px)';
+        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(48, 49, 51, 0.1), 0 4px 6px -2px rgba(48, 49, 51, 0.05)';
       }}
       onMouseLeave={(e) => {
-        e.target.style.transform = 'translateY(0)';
-        e.target.style.boxShadow = '0 4px 6px -1px rgba(48, 49, 51, 0.1), 0 2px 4px -1px rgba(48, 49, 51, 0.06)';
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(48, 49, 51, 0.1), 0 2px 4px -1px rgba(48, 49, 51, 0.06)';
       }}
     >
       {article.photo ? (

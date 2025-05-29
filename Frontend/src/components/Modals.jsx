@@ -1,11 +1,14 @@
 // Frontend\src\components\Modals.jsx
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { STYLES, NODE_STYLES } from '../constants/treeConstants';
 import PhotoUpload from './PhotoUpload';
 
 // Модальное окно с информацией о персоне
 export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
+  const navigate = useNavigate();
+  
   if (!modal.isOpen || !modal.person) return null;
 
   const canDelete = modal.personId !== 'root-1'; // Нельзя удалить основателя
@@ -16,6 +19,11 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const handleArticleClick = (articleId) => {
+    onClose(); // Закрываем модальное окно
+    navigate(`/articles/${articleId}`); // Переходим на страницу статьи
   };
 
   return (
@@ -301,7 +309,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
             </div>
           )}
 
-          {/* НОВЫЙ РАЗДЕЛ: Статьи персоны */}
+          {/* ОБНОВЛЕННЫЙ РАЗДЕЛ: Статьи персоны */}
           <div>
             <h4 style={{
               fontSize: '1.125rem',
@@ -342,17 +350,16 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
                       transition: 'all 0.2s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = '#f8f8f8';
-                      e.target.style.borderColor = '#c0a282';
+                      e.currentTarget.style.backgroundColor = '#f8f8f8';
+                      e.currentTarget.style.borderColor = '#c0a282';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
                     }}
                     onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = '#ffffffc3';
-                      e.target.style.borderColor = '#e0e0e0';
+                      e.currentTarget.style.backgroundColor = '#ffffffc3';
+                      e.currentTarget.style.borderColor = '#e0e0e0';
+                      e.currentTarget.style.transform = 'translateY(0)';
                     }}
-                    onClick={() => {
-                      // Открыть статью в новой вкладке или показать модальное окно
-                      window.open(`/#/articles?id=${article.id}`, '_blank');
-                    }}
+                    onClick={() => handleArticleClick(article.id)}
                   >
                     {/* Миниатюра */}
                     <div style={{
@@ -427,9 +434,13 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
                     {/* Стрелка */}
                     <div style={{
                       color: '#c0a282',
-                      fontSize: '1.25rem'
+                      fontSize: '1.25rem',
+                      display: 'flex',
+                      alignItems: 'center'
                     }}>
-                      →
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </div>
                   </div>
                 ))}
@@ -466,7 +477,9 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
   );
 };
 
-// НОВОЕ МОДАЛЬНОЕ ОКНО: Редактирование персоны
+// Остальные модальные окна остаются без изменений...
+// (EditPersonModal, AddSpouseModal, AddChildModal - их код не изменился)
+
 export const EditPersonModal = ({ 
   modal, 
   onModalChange, 
@@ -527,7 +540,6 @@ export const EditPersonModal = ({
           </div>
         </div>
         
-        {/* НОВЫЙ КОМПОНЕНТ ЗАГРУЗКИ ФОТО */}
         <PhotoUpload
           photo={modal.photo}
           onPhotoChange={(photo) => onModalChange({ photo })}
@@ -602,7 +614,6 @@ export const EditPersonModal = ({
   );
 };
 
-// Модальное окно для добавления супруга
 export const AddSpouseModal = ({ 
   modal, 
   onModalChange, 
@@ -664,7 +675,6 @@ export const AddSpouseModal = ({
           </div>
         </div>
         
-        {/* НОВЫЙ КОМПОНЕНТ ЗАГРУЗКИ ФОТО */}
         <PhotoUpload
           photo={modal.photo}
           onPhotoChange={(photo) => onModalChange({ photo })}
@@ -757,7 +767,6 @@ export const AddSpouseModal = ({
   );
 };
 
-// Модальное окно для добавления ребенка
 export const AddChildModal = ({ 
   modal, 
   onModalChange, 
@@ -821,7 +830,6 @@ export const AddChildModal = ({
           </div>
         </div>
         
-        {/* НОВЫЙ КОМПОНЕНТ ЗАГРУЗКИ ФОТО */}
         <PhotoUpload
           photo={modal.photo}
           onPhotoChange={(photo) => onModalChange({ photo })}

@@ -5,7 +5,6 @@ import articlesAPI from '../services/articlesApi';
 import familyTreeAPI from '../services/api';
 import { STYLES } from '../constants/treeConstants';
 import ArticleCard from './ArticleCard';
-import ArticleModal from './ArticleModal';
 import CreateArticleModal from './CreateArticleModal';
 
 const ArticlesPage = () => {
@@ -15,8 +14,7 @@ const ArticlesPage = () => {
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null);
 
-  // Модальные окна
-  const [selectedArticle, setSelectedArticle] = useState(null);
+  // Модальное окно создания
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // Загрузка данных при инициализации
@@ -61,10 +59,6 @@ const ArticlesPage = () => {
     setNotification({ message, type });
   };
 
-  const handleArticleClick = (article) => {
-    setSelectedArticle(article);
-  };
-
   const handleCreateArticle = async (articleData) => {
     try {
       const result = await articlesAPI.createArticle(articleData);
@@ -78,46 +72,6 @@ const ArticlesPage = () => {
       }
     } catch (error) {
       console.error('Ошибка создания статьи:', error);
-      showNotification(`Ошибка: ${error.message}`);
-    }
-  };
-
-  const handleUpdateArticle = async (articleId, articleData) => {
-    try {
-      const result = await articlesAPI.updateArticle(articleId, articleData);
-      
-      if (result.success) {
-        setArticles(prev => prev.map(article => 
-          article.id === articleId ? result.data : article
-        ));
-        showNotification('Статья успешно обновлена!', 'success');
-        setSelectedArticle(null);
-      } else {
-        showNotification(result.message);
-      }
-    } catch (error) {
-      console.error('Ошибка обновления статьи:', error);
-      showNotification(`Ошибка: ${error.message}`);
-    }
-  };
-
-  const handleDeleteArticle = async (articleId) => {
-    if (!window.confirm('Вы уверены, что хотите удалить эту статью?')) {
-      return;
-    }
-
-    try {
-      const result = await articlesAPI.deleteArticle(articleId);
-      
-      if (result.success) {
-        setArticles(prev => prev.filter(article => article.id !== articleId));
-        showNotification('Статья успешно удалена!', 'success');
-        setSelectedArticle(null);
-      } else {
-        showNotification(result.message);
-      }
-    } catch (error) {
-      console.error('Ошибка удаления статьи:', error);
       showNotification(`Ошибка: ${error.message}`);
     }
   };
@@ -264,21 +218,9 @@ const ArticlesPage = () => {
             <ArticleCard
               key={article.id}
               article={article}
-              onClick={() => handleArticleClick(article)}
             />
           ))}
         </div>
-      )}
-
-      {/* Модальное окно статьи */}
-      {selectedArticle && (
-        <ArticleModal
-          article={selectedArticle}
-          onClose={() => setSelectedArticle(null)}
-          onUpdate={handleUpdateArticle}
-          onDelete={handleDeleteArticle}
-          familyData={familyData}
-        />
       )}
 
       {/* Модальное окно создания статьи */}
