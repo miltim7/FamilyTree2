@@ -56,6 +56,22 @@ class FamilyTreeAPI {
     });
   }
 
+  // НОВЫЙ МЕТОД: Редактировать персону
+  async editPerson(personId, personData, isSpouse = false) {
+    return await this.request(`/family/person/${personId}`, {
+      method: 'PUT',
+      body: { personData, isSpouse }
+    });
+  }
+
+  // НОВЫЙ МЕТОД: Удалить персону
+  async deletePerson(personId, isSpouse = false) {
+    return await this.request(`/family/person/${personId}`, {
+      method: 'DELETE',
+      body: { isSpouse }
+    });
+  }
+
   // Проверка сервера
   async checkServerHealth() {
     try {

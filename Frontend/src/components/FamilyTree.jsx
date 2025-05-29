@@ -8,7 +8,7 @@ import { generateTreeLayout, getBoundaries } from '../utils/treeLayoutUtils';
 import { findPersonById, getBloodRelatives } from '../utils/familyUtils';
 import PersonNode from './PersonNode';
 import TreeConnections from './TreeConnections';
-import { PersonInfoModal, AddSpouseModal, AddChildModal } from './Modals';
+import { PersonInfoModal, EditPersonModal, AddSpouseModal, AddChildModal } from './Modals';
 
 const FamilyTree = () => {
   // Используем кастомные хуки
@@ -81,7 +81,8 @@ const FamilyTree = () => {
         familyTreeState.setPersonInfoModal({
           isOpen: true,
           person: personData,
-          isSpouse: isSpouse
+          isSpouse: isSpouse,
+          personId: baseId
         });
       }
     }
@@ -442,11 +443,12 @@ const FamilyTree = () => {
           <li style={STYLES.instructionItem}>Нажмите "Добавить ребенка", чтобы добавить нового человека с выбором родителя</li>
           <li style={STYLES.instructionItem}>Нажмите "Добавить супруга(-у)" для добавления пары к персоне</li>
           <li style={STYLES.instructionItem}><strong>Кликните на карточку персоны</strong> - откроется модальное окно с подробной информацией</li>
+          <li style={STYLES.instructionItem}><strong>В модальном окне персоны</strong> доступны кнопки "Редактировать" и "Удалить"</li>
+          <li style={STYLES.instructionItem}><strong>При добавлении фото</strong> можно перетащить файл в область загрузки или выбрать через кнопку</li>
           <li style={STYLES.instructionItem}>Кликните на кнопку '-' на линии, чтобы скрыть поколение</li>
           <li style={STYLES.instructionItem}>Кликните на кнопку '+' на пунктирной линии, чтобы показать скрытое поколение</li>
           <li style={STYLES.instructionItem}><strong>Наведите на карточку персоны</strong> - появится иконка дерева в правом верхнем углу</li>
           <li style={STYLES.instructionItem}><strong>Кликните на иконку дерева</strong> - отобразится только ветка этого родственника (предки, потомки, супруги)</li>
-          <li style={STYLES.instructionItem}><strong>Повторный клик на иконку</strong> или кнопку "Показать всех родственников" вернет полный вид</li>
           <li style={STYLES.instructionItem}>Используйте Ctrl + колесо мыши для масштабирования и перетаскивание для навигации</li>
           <li style={STYLES.instructionItem}><strong>Все изменения автоматически сохраняются на сервере!</strong></li>
         </ul>
@@ -456,6 +458,15 @@ const FamilyTree = () => {
       <PersonInfoModal 
         modal={familyTreeState.personInfoModal}
         onClose={familyTreeState.cancelModals}
+        onEdit={familyTreeState.openEditModal}
+        onDelete={familyTreeState.deletePerson}
+      />
+
+      <EditPersonModal 
+        modal={familyTreeState.editModal}
+        onModalChange={(updates) => familyTreeState.setEditModal(prev => ({ ...prev, ...updates }))}
+        onClose={familyTreeState.cancelModals}
+        onConfirm={familyTreeState.confirmEditPerson}
       />
       
       <AddSpouseModal 

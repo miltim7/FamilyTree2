@@ -21,7 +21,7 @@ app.use(cors({
     origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '50mb' })); // Увеличиваем лимит для фотографий
 app.use(morgan('combined'));
 
 // Инициализация данных при старте сервера
@@ -94,6 +94,29 @@ const findPersonById = (root, targetId) => {
     }
     
     return null;
+};
+
+// Поиск и удаление персоны из дерева
+const removePersonById = (root, targetId) => {
+    if (!root || !targetId) return false;
+    
+    if (root.children && Array.isArray(root.children)) {
+        const initialLength = root.children.length;
+        root.children = root.children.filter(child => child && child.id !== targetId);
+        
+        if (root.children.length < initialLength) {
+            return true; // Персона была удалена
+        }
+        
+        // Рекурсивно ищем в детях
+        for (const child of root.children) {
+            if (child && removePersonById(child, targetId)) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
 };
 
 // API ROUTES
@@ -237,6 +260,126 @@ app.post('/api/family/spouse', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Ошибка сервера при добавлении супруга'
+        });
+    }
+});
+
+// НОВЫЙ ENDPOINT: Редактировать персону
+app.put('/api/family/person/:personId', async (req, res) => {
+    try {
+        const { personId } = req.params;
+        const { personData, isSpouse } = req.body;
+        
+        if (!personId || !personData?.name?.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Не указан ID персоны или новые данные'
+            });
+        }
+        
+        const familyData = await readFamilyData();
+        const person = findPersonById(familyData, personId);
+        
+        if (!person) {
+            return res.status(404).json({
+                success: false,
+                message: 'Персона не найдена'
+            });
+        }
+        
+        const targetPerson = isSpouse ? person.spouse : person;
+        
+        if (!targetPerson) {
+            return res.status(404).json({
+                success: false,
+                message: 'Целевая персона не найдена'
+            });
+        }
+        
+        // Обновляем данные персоны
+        targetPerson.name = personData.name.trim();
+        targetPerson.gender = personData.gender || targetPerson.gender;
+        targetPerson.photo = personData.photo || null;
+        targetPerson.lifeYears = personData.lifeYears || '';
+        targetPerson.profession = personData.profession || '';
+        targetPerson.birthPlace = personData.birthPlace || '';
+        targetPerson.biography = personData.biography || '';
+        
+        await writeFamilyData(familyData);
+        
+        res.json({
+            success: true,
+            message: 'Данные персоны успешно обновлены',
+            data: familyData
+        });
+        
+    } catch (error) {
+        console.error('Ошибка редактирования персоны:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при редактировании персоны'
+        });
+    }
+});
+
+// НОВЫЙ ENDPOINT: Удалить персону
+app.delete('/api/family/person/:personId', async (req, res) => {
+    try {
+        const { personId } = req.params;
+        const { isSpouse } = req.body;
+        
+        if (!personId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Не указан ID персоны'
+            });
+        }
+        
+        const familyData = await readFamilyData();
+        
+        if (isSpouse) {
+            // Удаляем супруга
+            const person = findPersonById(familyData, personId);
+            if (!person || !person.spouse) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Супруг не найден'
+                });
+            }
+            
+            person.spouse = null;
+        } else {
+            // Проверяем, что это не корневая персона
+            if (familyData.id === personId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Нельзя удалить основателя рода'
+                });
+            }
+            
+            // Удаляем персону из дерева
+            const removed = removePersonById(familyData, personId);
+            if (!removed) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Персона не найдена для удаления'
+                });
+            }
+        }
+        
+        await writeFamilyData(familyData);
+        
+        res.json({
+            success: true,
+            message: isSpouse ? 'Супруг успешно удален' : 'Персона успешно удалена',
+            data: familyData
+        });
+        
+    } catch (error) {
+        console.error('Ошибка удаления персоны:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при удалении персоны'
         });
     }
 });

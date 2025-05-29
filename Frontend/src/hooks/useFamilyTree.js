@@ -26,7 +26,23 @@ export const useFamilyTree = () => {
   const [personInfoModal, setPersonInfoModal] = useState({
     isOpen: false,
     person: null,
-    isSpouse: false
+    isSpouse: false,
+    personId: null
+  });
+
+  // НОВОЕ СОСТОЯНИЕ: Модальное окно редактирования
+  const [editModal, setEditModal] = useState({
+    isOpen: false,
+    name: '',
+    gender: 'male',
+    photo: '',
+    lifeYears: '',
+    profession: '',
+    birthPlace: '',
+    biography: '',
+    personId: null,
+    isSpouse: false,
+    loading: false
   });
   
   // Состояние для супруга
@@ -144,6 +160,120 @@ export const useFamilyTree = () => {
       setSelectedBranch(personId);
     }
   }, [selectedBranch]);
+
+  // НОВАЯ ФУНКЦИЯ: Открыть редактирование персоны
+  const openEditModal = useCallback((person, isSpouse, personId) => {
+    setEditModal({
+      isOpen: true,
+      name: person.name || '',
+      gender: person.gender || 'male',
+      photo: person.photo || '',
+      lifeYears: person.lifeYears || '',
+      profession: person.profession || '',
+      birthPlace: person.birthPlace || '',
+      biography: person.biography || '',
+      personId: personId,
+      isSpouse: isSpouse,
+      loading: false
+    });
+  }, []);
+
+  // НОВАЯ ФУНКЦИЯ: Подтвердить редактирование
+  const confirmEditPerson = useCallback(async () => {
+    const { name, gender, photo, lifeYears, profession, birthPlace, biography, personId, isSpouse } = editModal;
+    
+    if (!name.trim()) {
+      showNotification("Введите имя персоны");
+      return;
+    }
+    
+    try {
+      setEditModal(prev => ({ ...prev, loading: true }));
+      
+      const personData = {
+        name: name,
+        gender: gender,
+        photo: photo || null,
+        lifeYears: lifeYears || '',
+        profession: profession || '',
+        birthPlace: birthPlace || '',
+        biography: biography || ''
+      };
+
+      const result = await familyTreeAPI.editPerson(personId, personData, isSpouse);
+      
+      if (!result.success) {
+        showNotification(result.message);
+        return;
+      }
+      
+      setFamilyData(result.data);
+      showNotification('Данные персоны успешно обновлены!', 'success');
+      
+      setEditModal({
+        isOpen: false,
+        name: '',
+        gender: 'male',
+        photo: '',
+        lifeYears: '',
+        profession: '',
+        birthPlace: '',
+        biography: '',
+        personId: null,
+        isSpouse: false,
+        loading: false
+      });
+      
+      // Закрываем также модальное окно информации
+      setPersonInfoModal({
+        isOpen: false,
+        person: null,
+        isSpouse: false,
+        personId: null
+      });
+      
+    } catch (error) {
+      console.error("Ошибка при редактировании персоны:", error);
+      showNotification(`Ошибка: ${error.message}`);
+    } finally {
+      setEditModal(prev => ({ ...prev, loading: false }));
+    }
+  }, [editModal, showNotification]);
+
+  // НОВАЯ ФУНКЦИЯ: Удалить персону
+  const deletePerson = useCallback(async (personId, isSpouse) => {
+    const confirmMessage = isSpouse 
+      ? "Вы уверены, что хотите удалить супруга(-у)?"
+      : "Вы уверены, что хотите удалить эту персону? Все её потомки также будут удалены.";
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+    
+    try {
+      const result = await familyTreeAPI.deletePerson(personId, isSpouse);
+      
+      if (!result.success) {
+        showNotification(result.message);
+        return;
+      }
+      
+      setFamilyData(result.data);
+      showNotification(result.message, 'success');
+      
+      // Закрываем модальное окно информации
+      setPersonInfoModal({
+        isOpen: false,
+        person: null,
+        isSpouse: false,
+        personId: null
+      });
+      
+    } catch (error) {
+      console.error("Ошибка при удалении персоны:", error);
+      showNotification(`Ошибка: ${error.message}`);
+    }
+  }, [showNotification]);
 
   // Модальные окна
   const openSpouseModal = useCallback(() => {
@@ -353,7 +483,21 @@ export const useFamilyTree = () => {
     setPersonInfoModal({
       isOpen: false,
       person: null,
-      isSpouse: false
+      isSpouse: false,
+      personId: null
+    });
+    setEditModal({
+      isOpen: false,
+      name: '',
+      gender: 'male',
+      photo: '',
+      lifeYears: '',
+      profession: '',
+      birthPlace: '',
+      biography: '',
+      personId: null,
+      isSpouse: false,
+      loading: false
     });
     setSelectionMode(null);
   }, []);
@@ -379,6 +523,8 @@ export const useFamilyTree = () => {
     selectedBranch,
     personInfoModal,
     setPersonInfoModal,
+    editModal,
+    setEditModal,
     spouseModal,
     setSpouseModal,
     childModal,
@@ -393,6 +539,9 @@ export const useFamilyTree = () => {
     resetHiddenGenerations,
     isGenerationHidden,
     toggleBranch,
+    openEditModal,
+    confirmEditPerson,
+    deletePerson,
     openSpouseModal,
     startSpousePersonSelection,
     confirmAddSpouse,
