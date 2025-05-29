@@ -1,0 +1,112 @@
+{
+  "id": "root-1",
+  "name": "Иван Петрович Иванов",
+  "gender": "male",
+  "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+  "lifeYears": "1950-2020",
+  "profession": "Инженер-строитель",
+  "birthPlace": "г. Москва",
+  "biography": "Родился в Москве в семье рабочих. Окончил МАИ по специальности \"Промышленное и гражданское строительство\". Работал главным инженером на нескольких крупных стройках.",
+  "spouse": {
+    "name": "Мария Васильевна Иванова",
+    "gender": "female",
+    "photo": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
+    "lifeYears": "1952-2018",
+    "profession": "Учитель начальных классов",
+    "birthPlace": "г. Тула",
+    "biography": "Всю жизнь посвятила воспитанию детей. Работала в школе №15, воспитала не одно поколение учеников."
+  },
+  "children": [
+    {
+      "id": "child-1",
+      "name": "Петр Иванович Иванов",
+      "gender": "male",
+      "photo": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      "lifeYears": "1975-н.в.",
+      "profession": "Программист",
+      "birthPlace": "г. Москва",
+      "biography": "Окончил МГУ факультет ВМК. Работает ведущим разработчиком в IT-компании.",
+      "spouse": {
+        "name": "Анна Сергеевна Иванова",
+        "gender": "female",
+        "photo": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+        "lifeYears": "1978-н.в.",
+        "profession": "Дизайнер",
+        "birthPlace": "г. Санкт-Петербург",
+        "biography": "Талантливый графический дизайнер, работает в рекламном агентстве."
+      },
+      "children": [
+        {
+          "id": "grandchild-1",
+          "name": "Алексей Петрович Иванов",
+          "gender": "male",
+          "photo": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face",
+          "lifeYears": "2005-н.в.",
+          "profession": "Студент",
+          "birthPlace": "г. Москва",
+          "biography": "Учится в университете на факультете информатики.",
+          "spouse": null,
+          "children": []
+        },
+        {
+          "id": "grandchild-2",
+          "name": "Ольга Петровна Петрова",
+          "gender": "female",
+          "photo": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
+          "lifeYears": "2008-н.в.",
+          "profession": "Школьница",
+          "birthPlace": "г. Москва",
+          "biography": "Учится в старших классах, увлекается рисованием.",
+          "spouse": null,
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "child-2",
+      "name": "Елена Ивановна Смирнова",
+      "gender": "female",
+      "photo": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face",
+      "lifeYears": "1980-н.в.",
+      "profession": "Врач-педиатр",
+      "birthPlace": "г. Москва",
+      "biography": "Окончила медицинский институт, работает в детской поликлинике.",
+      "spouse": {
+        "name": "Михаил Александрович Смирнов",
+        "gender": "male",
+        "photo": "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop&crop=face",
+        "lifeYears": "1975-н.в.",
+        "profession": "Юрист",
+        "birthPlace": "г. Волгоград",
+        "biography": "Успешный адвокат, специализируется на семейном праве."
+      },
+      "children": [
+        {
+          "id": "grandchild-3",
+          "name": "Наталья Михайловна Смирнова",
+          "gender": "female",
+          "photo": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face",
+          "lifeYears": "2010-н.в.",
+          "profession": "Школьница",
+          "birthPlace": "г. Москва",
+          "biography": "Учится в средней школе, занимается танцами.",
+          "spouse": null,
+          "children": [
+            {
+              "id": "dc25d56f-4289-477b-9668-47414dfec22e",
+              "name": "pidoras",
+              "gender": "male",
+              "photo": null,
+              "lifeYears": "1222",
+              "profession": "ascac",
+              "birthPlace": "",
+              "biography": "",
+              "spouse": null,
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
