@@ -169,21 +169,21 @@ const FamilyTree = () => {
           minHeight: '60vh',
           backgroundColor: 'white',
           borderRadius: '0.5rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 4px 6px -1px rgba(48, 49, 51, 0.1)',
           padding: '2rem',
           textAlign: 'center'
         }}>
           <div style={{
             width: '50px',
             height: '50px',
-            border: '4px solid #f3f4f6',
-            borderTop: '4px solid #3b82f6',
+            border: '4px solid #ffffffc3',
+            borderTop: '4px solid #c0a282',
             borderRadius: '50%',
             animation: 'spin 1s linear infinite',
             marginBottom: '1rem'
           }}></div>
-          <h2>Загрузка семейного дерева...</h2>
-          <p>Подключение к серверу...</p>
+          <h2 style={{ color: '#303133', fontFamily: 'Montserrat, sans-serif' }}>Загрузка семейного дерева...</h2>
+          <p style={{ color: '#303133', fontFamily: 'Montserrat, sans-serif' }}>Подключение к серверу...</p>
         </div>
       </div>
     );
@@ -201,18 +201,18 @@ const FamilyTree = () => {
           minHeight: '60vh',
           backgroundColor: 'white',
           borderRadius: '0.5rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 4px 6px -1px rgba(48, 49, 51, 0.1)',
           padding: '2rem',
           textAlign: 'center',
           maxWidth: '600px'
         }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc2626', marginBottom: '1rem' }}>
-            ⚠️ Сервер недоступен
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#303133', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>
+            Сервер недоступен
           </h2>
-          <p style={{ fontSize: '1rem', color: '#6b7280', marginBottom: '0.5rem', lineHeight: '1.5' }}>
+          <p style={{ fontSize: '1rem', color: '#303133', marginBottom: '0.5rem', lineHeight: '1.5', fontFamily: 'Montserrat, sans-serif' }}>
             Не удается подключиться к серверу семейного дерева.
           </p>
-          <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
+          <p style={{ fontSize: '0.875rem', color: '#303133', marginBottom: '0.5rem', fontFamily: 'Montserrat, sans-serif' }}>
             Убедитесь, что сервер запущен на порту 5000
           </p>
           <button 
@@ -223,12 +223,13 @@ const FamilyTree = () => {
               cursor: 'pointer',
               border: 'none',
               fontWeight: '500',
-              backgroundColor: '#2563eb',
+              backgroundColor: '#c0a282',
               color: 'white',
-              marginTop: '1rem'
+              marginTop: '1rem',
+              fontFamily: 'Montserrat, sans-serif'
             }}
           >
-            🔄 Попробовать снова
+            Попробовать снова
           </button>
         </div>
       </div>
@@ -247,14 +248,14 @@ const FamilyTree = () => {
           minHeight: '60vh',
           backgroundColor: 'white',
           borderRadius: '0.5rem',
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 4px 6px -1px rgba(48, 49, 51, 0.1)',
           padding: '2rem',
           textAlign: 'center'
         }}>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#dc2626', marginBottom: '1rem' }}>
-            ❌ Ошибка загрузки данных
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#303133', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>
+            Ошибка загрузки данных
           </h2>
-          <p style={{ fontSize: '1rem', color: '#6b7280', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '1rem', color: '#303133', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>
             {familyTreeState.error}
           </p>
           <button 
@@ -265,11 +266,12 @@ const FamilyTree = () => {
               cursor: 'pointer',
               border: 'none',
               fontWeight: '500',
-              backgroundColor: '#2563eb',
-              color: 'white'
+              backgroundColor: '#c0a282',
+              color: 'white',
+              fontFamily: 'Montserrat, sans-serif'
             }}
           >
-            🔄 Обновить данные
+            Обновить данные
           </button>
         </div>
       </div>
@@ -279,7 +281,7 @@ const FamilyTree = () => {
   // Рендеринг дерева
   const renderFamilyTree = () => {
     if (!treeLayout || !treeLayout.nodes || !Array.isArray(treeLayout.nodes) || treeLayout.nodes.length === 0) {
-      return <text x="100" y="100" fontSize="16">Нет данных для отображения</text>;
+      return <text x="100" y="100" fontSize="16" fill="#303133" fontFamily="Montserrat, sans-serif">Нет данных для отображения</text>;
     }
     
     return (
@@ -321,13 +323,14 @@ const FamilyTree = () => {
         {!familyTreeState.isServerConnected && (
           <span style={{
             fontSize: '1rem',
-            color: '#ef4444',
-            backgroundColor: '#fef2f2',
+            color: '#303133',
+            backgroundColor: '#ffffffc3',
             padding: '0.25rem 0.5rem',
             borderRadius: '0.375rem',
-            border: '1px solid #fecaca'
+            border: '1px solid #c0a282',
+            fontFamily: 'Montserrat, sans-serif'
           }}>
-            📡 Офлайн
+            Офлайн
           </span>
         )}
       </h1>
@@ -428,7 +431,7 @@ const FamilyTree = () => {
           }}
           disabled={familyTreeState.loading}
         >
-          {familyTreeState.loading ? '⏳' : '🔄'} Обновить
+          {familyTreeState.loading ? 'Загрузка...' : 'Обновить'}
         </button>
       </div>
 
@@ -445,7 +448,7 @@ const FamilyTree = () => {
           <li style={STYLES.instructionItem}><strong>Кликните на иконку дерева</strong> - отобразится только ветка этого родственника (предки, потомки, супруги)</li>
           <li style={STYLES.instructionItem}><strong>Повторный клик на иконку</strong> или кнопку "Показать всех родственников" вернет полный вид</li>
           <li style={STYLES.instructionItem}>Используйте Ctrl + колесо мыши для масштабирования и перетаскивание для навигации</li>
-          <li style={STYLES.instructionItem}>💾 <strong>Все изменения автоматически сохраняются на сервере!</strong></li>
+          <li style={STYLES.instructionItem}><strong>Все изменения автоматически сохраняются на сервере!</strong></li>
         </ul>
       </div>
       
@@ -473,10 +476,7 @@ const FamilyTree = () => {
       
       {/* Уведомление о режиме выбора */}
       {familyTreeState.selectionMode && (
-        <div style={{
-          ...STYLES.selectionModeNotice,
-          backgroundColor: familyTreeState.selectionMode === 'parent' ? '#059669' : '#7c3aed',
-        }}>
+        <div style={STYLES.selectionModeNotice}>
           <div style={STYLES.selectionModeTitle}>
             {familyTreeState.selectionMode === 'parent' ? 'Режим выбора родителя' : 'Режим выбора персоны для супруга'}
           </div>
@@ -504,30 +504,16 @@ const FamilyTree = () => {
           color: 'white',
           padding: '10px 20px',
           borderRadius: '6px',
-          boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+          boxShadow: '0 2px 10px rgba(48, 49, 51, 0.2)',
           zIndex: 100,
           opacity: 1,
           transition: 'opacity 0.3s ease',
-          backgroundColor: familyTreeState.notification.type === 'success' ? '#059669' : '#ef4444'
+          backgroundColor: familyTreeState.notification.type === 'success' ? '#c0a282' : '#303133',
+          fontFamily: 'Montserrat, sans-serif'
         }}>
-          {familyTreeState.notification.type === 'success' ? '✅' : '⚠️'} {familyTreeState.notification.message}
+          {familyTreeState.notification.message}
         </div>
       )}
-
-      {/* Индикатор статуса подключения */}
-      <div style={{
-        position: 'fixed',
-        bottom: '1rem',
-        right: '1rem',
-        fontSize: '0.875rem',
-        padding: '0.5rem 1rem',
-        borderRadius: '0.375rem',
-        backgroundColor: familyTreeState.isServerConnected ? '#d1fae5' : '#fee2e2',
-        color: familyTreeState.isServerConnected ? '#065f46' : '#991b1b',
-        border: familyTreeState.isServerConnected ? '1px solid #a7f3d0' : '1px solid #fecaca'
-      }}>
-        {familyTreeState.isServerConnected ? '🟢 Сервер подключен' : '🔴 Сервер недоступен'}
-      </div>
     </div>
   );
 };

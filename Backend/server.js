@@ -46,10 +46,10 @@ const initializeData = async () => {
             };
             
             await fs.writeJSON(DATA_FILE, defaultData, { spaces: 2 });
-            console.log('✅ Создан файл данных по умолчанию');
+            console.log('Создан файл данных по умолчанию');
         }
     } catch (error) {
-        console.error('❌ Ошибка инициализации:', error);
+        console.error('Ошибка инициализации:', error);
     }
 };
 
@@ -67,7 +67,7 @@ const readFamilyData = async () => {
 const writeFamilyData = async (data) => {
     try {
         await fs.writeJSON(DATA_FILE, data, { spaces: 2 });
-        console.log('💾 Данные сохранены');
+        console.log('Данные сохранены');
         return true;
     } catch (error) {
         console.error('Ошибка записи данных:', error);
@@ -243,14 +243,14 @@ app.post('/api/family/spouse', async (req, res) => {
 
 // Обработка ошибок
 app.use((err, req, res, next) => {
-    console.error('💥 Server Error:', err);
+    console.error('Server Error:', err);
     res.status(500).json({
         success: false,
         message: 'Внутренняя ошибка сервера'
     });
 });
 
-// 404 обработчик - ИСПРАВЛЕНО
+// 404 обработчик
 app.use((req, res) => {
     res.status(404).json({
         success: false,
@@ -264,17 +264,17 @@ const startServer = async () => {
         await initializeData();
         
         app.listen(PORT, () => {
-            console.log('🚀====================================');
-            console.log(`🌳 Family Tree Server запущен!`);
-            console.log(`📡 Порт: ${PORT}`);
-            console.log(`🌐 API: http://localhost:${PORT}/api/family`);
-            console.log(`📁 Данные: ${DATA_FILE}`);
-            console.log(`💾 Резервные копии: ${BACKUP_DIR}`);
-            console.log('====================================🚀');
+            console.log('====================================');
+            console.log(`Family Tree Server запущен!`);
+            console.log(`Порт: ${PORT}`);
+            console.log(`API: http://localhost:${PORT}/api/family`);
+            console.log(`Данные: ${DATA_FILE}`);
+            console.log(`Резервные копии: ${BACKUP_DIR}`);
+            console.log('====================================');
         });
         
     } catch (error) {
-        console.error('❌ Ошибка запуска сервера:', error);
+        console.error('Ошибка запуска сервера:', error);
         process.exit(1);
     }
 };

@@ -38,21 +38,8 @@ const PersonNode = ({
     console.error('Ошибка при поиске данных персоны:', error);
   }
   
-  // Определяем стили узла
-  let nodeStyle = {};
-  
-  if (personData && personData.gender === 'male') {
-    nodeStyle = { ...NODE_STYLES.maleNode };
-  } else if (personData && personData.gender === 'female') {
-    nodeStyle = { ...NODE_STYLES.femaleNode };
-  } else {
-    nodeStyle = { 
-      fill: "#f0f4f8", 
-      stroke: "#c2cfd6", 
-      strokeWidth: 2,
-      transition: 'fill 0.3s, stroke 0.3s, stroke-width 0.3s, opacity 0.3s'
-    };
-  }
+  // Определяем стили узла - ВСЕ УЗЛЫ ОДНОГО ЦВЕТА
+  let nodeStyle = { ...NODE_STYLES.maleNode }; // Используем единый стиль
   
   // Применяем фильтрацию по ветке
   if (!shouldShow) {
@@ -60,11 +47,7 @@ const PersonNode = ({
   }
   
   if (selectedPerson === nodeId) {
-    if (personData?.gender === 'male') {
-      nodeStyle.stroke = NODE_STYLES.selectedMaleNode.stroke;
-    } else {
-      nodeStyle.stroke = NODE_STYLES.selectedFemaleNode.stroke;
-    }
+    nodeStyle.stroke = NODE_STYLES.selectedMaleNode.stroke;
   }
   
   if (node.hasHiddenGeneration) {
@@ -95,7 +78,7 @@ const PersonNode = ({
     }
   }
   
-  let cursorStyle = selectionMode ? 'pointer' : 'pointer'; // Всегда pointer для показа информации
+  let cursorStyle = selectionMode ? 'pointer' : 'pointer';
   
   if (selectionMode === 'spouse') {
     if (isSpouse) {
@@ -143,7 +126,7 @@ const PersonNode = ({
       {/* Фотография - в верху карточки, большего размера */}
       {node.photo ? (
         <image
-          x={(node.width - 60) / 2} // Центрируем фото по горизонтали
+          x={(node.width - 60) / 2}
           y={10}
           width={60}
           height={60}
@@ -155,11 +138,11 @@ const PersonNode = ({
       ) : (
         <g>
           <circle
-            cx={node.width / 2} // Центрируем по горизонтали
+            cx={node.width / 2}
             cy={40}
             r={30}
-            fill="#e5e7eb"
-            stroke="#d1d5db"
+            fill="#ffffffc3"
+            stroke="#c0a282"
             strokeWidth={1}
             style={{ cursor: cursorStyle }}
             onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
@@ -169,14 +152,15 @@ const PersonNode = ({
             y={45}
             style={{
               fontSize: '24px',
-              fill: '#9ca3af',
+              fill: '#c0a282',
               textAnchor: 'middle',
               dominantBaseline: 'middle',
               cursor: cursorStyle,
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              fontFamily: 'Montserrat, sans-serif'
             }}
           >
-            👤
+            USER
           </text>
         </g>
       )}
@@ -246,7 +230,7 @@ const PersonNode = ({
       {/* Имя персоны - под фотографией */}
       <text
         x={node.width / 2}
-        y={85} // Под фотографией
+        y={85}
         style={{
           ...NODE_STYLES.nodeText,
           cursor: cursorStyle,
@@ -257,11 +241,11 @@ const PersonNode = ({
           fontWeight: 'bold'
         }}
       >
-        {node.name && node.name.length > 20 ? node.name.substring(0, 20) + '...' : node.name || 'Без имени'}
+        {node.name && node.name.length > 25 ? node.name.substring(0, 25) + '...' : node.name || 'Без имени'}
       </text>
       
       {/* Вторая строка имени если длинное */}
-      {node.name && node.name.length > 20 && (
+      {node.name && node.name.length > 25 && (
         <text
           x={node.width / 2}
           y={100}
@@ -275,14 +259,14 @@ const PersonNode = ({
             fontWeight: 'bold'
           }}
         >
-          {node.name.substring(20, 40)}
+          {node.name.substring(25, 50)}
         </text>
       )}
       
       {/* Годы жизни - под именем */}
       <text
         x={node.width / 2}
-        y={node.name && node.name.length > 20 ? 115 : 100}
+        y={node.name && node.name.length > 25 ? 115 : 100}
         style={{
           ...NODE_STYLES.nodeSubText,
           cursor: cursorStyle,

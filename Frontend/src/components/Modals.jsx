@@ -15,8 +15,8 @@ export const PersonInfoModal = ({ modal, onClose }) => {
           <button
             onClick={onClose}
             style={STYLES.modalCloseButton}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#303133'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#303133'}
           >
             ×
           </button>
@@ -32,8 +32,8 @@ export const PersonInfoModal = ({ modal, onClose }) => {
                 style={NODE_STYLES.personPhoto}
               />
             ) : (
-              <div style={{...NODE_STYLES.personPhoto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', color: '#9ca3af'}}>
-                👤
+              <div style={{...NODE_STYLES.personPhoto, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', color: '#c0a282'}}>
+                USER
               </div>
             )}
           </div>
@@ -44,7 +44,7 @@ export const PersonInfoModal = ({ modal, onClose }) => {
             
             <div style={NODE_STYLES.personField}>
               <div style={NODE_STYLES.fieldLabel}>Пол:</div>
-              <div style={NODE_STYLES.fieldValue}>{modal.person.gender === 'male' ? 'Мужской ♂' : 'Женский ♀'}</div>
+              <div style={NODE_STYLES.fieldValue}>{modal.person.gender === 'male' ? 'Мужской' : 'Женский'}</div>
             </div>
             
             <div style={NODE_STYLES.personField}>
@@ -93,8 +93,8 @@ export const AddSpouseModal = ({
           <button
             onClick={onClose}
             style={STYLES.modalCloseButton}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#303133'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#303133'}
           >
             ×
           </button>
@@ -253,8 +253,8 @@ export const AddChildModal = ({
           <button
             onClick={onClose}
             style={STYLES.modalCloseButton}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#dc2626'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#ef4444'}
+            onMouseEnter={(e) => e.target.style.backgroundColor = '#303133'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = '#303133'}
           >
             ×
           </button>
