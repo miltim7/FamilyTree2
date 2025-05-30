@@ -10,7 +10,7 @@ const {
   BRANCH_GAP
 } = TREE_CONSTANTS;
 
-// ОРИГИНАЛЬНАЯ генерация макета дерева с правильными соединениями
+// УЛУЧШЕННАЯ генерация макета дерева с исправленным позиционированием
 export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
   if (!familyData) {
     console.error('Данные семейного древа отсутствуют');
@@ -26,17 +26,66 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
   const isGenerationHidden = (nodeId) => {
     return !!hiddenGenerations[nodeId];
   };
-  
-  // Функция обработки узла - ОРИГИНАЛЬНАЯ ЛОГИКА
-  const processNode = (node, level = 0, parentX = null, parentY = null) => {
-    if (!node || !node.id) return 0;
+
+  // НОВАЯ ФУНКЦИЯ: Расчет необходимой ширины для узла и всех его потомков
+  const calculateNodeWidth = (node) => {
+    if (!node) return PERSON_WIDTH;
     
     const hasSpouse = node.spouse !== null && node.spouse !== undefined;
     const hasChildren = node.children && Array.isArray(node.children) && node.children.length > 0;
     const isHiddenGeneration = isGenerationHidden(node.id);
     
-    // Позиция персоны
-    const personX = parentX !== null ? parentX : 0;
+    // Базовая ширина узла (персона + супруг если есть)
+    let nodeWidth = PERSON_WIDTH;
+    if (hasSpouse) {
+      nodeWidth += PERSON_WIDTH + HORIZONTAL_GAP;
+    }
+    
+    // Если нет детей или они скрыты, возвращаем базовую ширину
+    if (!hasChildren || isHiddenGeneration) {
+      return nodeWidth;
+    }
+    
+    // Рассчитываем ширину всех детей
+    let childrenTotalWidth = 0;
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
+      if (!child) continue;
+      
+      const childWidth = calculateNodeWidth(child);
+      childrenTotalWidth += childWidth;
+      
+      // Добавляем отступ между детьми (кроме последнего)
+      if (i < node.children.length - 1) {
+        childrenTotalWidth += BRANCH_GAP;
+      }
+    }
+    
+    // Возвращаем максимум из ширины узла и ширины детей
+    return Math.max(nodeWidth, childrenTotalWidth);
+  };
+  
+  // УЛУЧШЕННАЯ функция обработки узла
+  const processNode = (node, level = 0, parentX = null, parentY = null, availableWidth = null) => {
+    if (!node || !node.id) return { width: PERSON_WIDTH, centerX: 0 };
+    
+    const hasSpouse = node.spouse !== null && node.spouse !== undefined;
+    const hasChildren = node.children && Array.isArray(node.children) && node.children.length > 0;
+    const isHiddenGeneration = isGenerationHidden(node.id);
+    
+    // Рассчитываем полную ширину этого узла
+    const nodeWidth = calculateNodeWidth(node);
+    
+    // Определяем позицию узла
+    let personX;
+    if (parentX !== null) {
+      // Центрируем относительно доступного пространства
+      const availableSpace = availableWidth || nodeWidth;
+      personX = parentX + (availableSpace - PERSON_WIDTH) / 2;
+    } else {
+      personX = 0; // Корневой элемент
+    }
+    
     const personY = level * (PERSON_HEIGHT + VERTICAL_GAP);
     
     // Добавляем основную персону
@@ -59,6 +108,7 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
     layout.nodes.push(personNode);
     
     let spouseNode = null;
+    let centerX = personX + PERSON_WIDTH / 2;
     
     // Добавляем супруга, если есть
     if (hasSpouse) {
@@ -81,75 +131,47 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
       
       layout.nodes.push(spouseNode);
       
-      // ОБНОВЛЕННОЕ соединение между супругами с nodeId
+      // Центр между супругами
+      centerX = (personX + spouseX + PERSON_WIDTH) / 2;
+      
+      // Соединение между супругами
       layout.connections.push({
         type: 'couple',
         x1: personX + PERSON_WIDTH,
         y1: personY + PERSON_HEIGHT / 2,
         x2: spouseX,
         y2: personY + PERSON_HEIGHT / 2,
-        nodeId: node.id // ДОБАВЛЯЕМ nodeId
+        nodeId: node.id
       });
     }
     
     // Обработка детей если они не скрыты
     if (hasChildren && !isHiddenGeneration) {
-      // Центр текущего узла
-      const centerX = hasSpouse 
-        ? (personX + spouseNode.x + PERSON_WIDTH) / 2 
-        : personX + PERSON_WIDTH / 2;
-      
       const bottomY = personY + PERSON_HEIGHT;
       const junctionY = bottomY + VERTICAL_GAP / 2;
       
-      // Рассчитываем ширины детей
-      let childrenWidths = [];
-      let totalChildrenWidth = 0;
+      // УЛУЧШЕННЫЙ расчет позиций детей
+      const childWidths = node.children.map(child => child ? calculateNodeWidth(child) : 0);
+      const totalChildrenWidth = childWidths.reduce((sum, width, index) => {
+        return sum + width + (index > 0 ? BRANCH_GAP : 0);
+      }, 0);
       
-      for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i];
-        if (!child) continue;
-        
-        let childWidth = PERSON_WIDTH;
-        
-        if (child.spouse) {
-          childWidth += PERSON_WIDTH + HORIZONTAL_GAP;
-        }
-        
-        if (child.children && Array.isArray(child.children) && child.children.length > 0 && !isGenerationHidden(child.id)) {
-          let descendantsWidth = 0;
-          for (let j = 0; j < child.children.length; j++) {
-            if (!child.children[j]) continue;
-            descendantsWidth += PERSON_WIDTH * (child.children[j].spouse ? 2 : 1) + HORIZONTAL_GAP;
-            if (j < child.children.length - 1) {
-              descendantsWidth += BRANCH_GAP;
-            }
-          }
-          childWidth = Math.max(childWidth, descendantsWidth);
-        }
-        
-        totalChildrenWidth += childWidth;
-        if (i < node.children.length - 1) {
-          totalChildrenWidth += HORIZONTAL_GAP * 2 + BRANCH_GAP;
-        }
-        
-        childrenWidths.push(childWidth);
-      }
+      // Стартовая позиция для размещения детей
+      let currentX = centerX - totalChildrenWidth / 2;
       
-      // Рисуем соединения
+      // Рисуем соединения от родителей
       if (hasSpouse) {
         const person1X = personX + PERSON_WIDTH / 2;
         const person2X = spouseNode.x + PERSON_WIDTH / 2;
         const midY = bottomY + VERTICAL_GAP / 4;
         
-        // ОБНОВЛЯЕМ все соединения с nodeId
         layout.connections.push({
           type: 'parent-junction',
           x1: person1X,
           y1: bottomY,
           x2: person1X,
           y2: midY,
-          nodeId: node.id // ДОБАВЛЯЕМ nodeId
+          nodeId: node.id
         });
         
         layout.connections.push({
@@ -158,7 +180,7 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
           y1: bottomY,
           x2: person2X,
           y2: midY,
-          nodeId: node.id // ДОБАВЛЯЕМ nodeId
+          nodeId: node.id
         });
         
         layout.connections.push({
@@ -167,10 +189,9 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
           y1: midY,
           x2: person2X,
           y2: midY,
-          nodeId: node.id // ДОБАВЛЯЕМ nodeId
+          nodeId: node.id
         });
         
-        // Главная линия с кнопкой управления
         layout.connections.push({
           type: 'parent-junction',
           x1: centerX,
@@ -183,7 +204,6 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
           nodeId: node.id
         });
       } else {
-        // Главная линия с кнопкой управления
         layout.connections.push({
           type: 'parent-junction',
           x1: centerX,
@@ -198,16 +218,14 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
       }
       
       // Размещаем детей
-      let currentX = centerX - totalChildrenWidth / 2;
-      
       for (let i = 0; i < node.children.length; i++) {
         const child = node.children[i];
         if (!child) continue;
         
-        const childWidth = childrenWidths[i];
+        const childWidth = childWidths[i];
         const childCenterX = currentX + childWidth / 2;
         
-        // ОБНОВЛЯЕМ соединительные линии с nodeId
+        // Соединительные линии к детям
         if (node.children.length > 1) {
           layout.connections.push({
             type: 'child-connection',
@@ -215,7 +233,7 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
             y1: junctionY,
             x2: childCenterX,
             y2: junctionY,
-            nodeId: node.id // ДОБАВЛЯЕМ nodeId родителя
+            nodeId: node.id
           });
           
           layout.connections.push({
@@ -224,7 +242,7 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
             y1: junctionY,
             x2: childCenterX,
             y2: bottomY + VERTICAL_GAP,
-            nodeId: child.id // ДОБАВЛЯЕМ nodeId ребенка
+            nodeId: child.id
           });
         } else {
           layout.connections.push({
@@ -233,34 +251,27 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
             y1: junctionY,
             x2: centerX,
             y2: bottomY + VERTICAL_GAP,
-            nodeId: child.id // ДОБАВЛЯЕМ nodeId ребенка
+            nodeId: child.id
           });
         }
         
         // Рекурсивно обрабатываем ребенка
-        const childX = node.children.length === 1 
-          ? centerX - PERSON_WIDTH / 2 
-          : childCenterX - PERSON_WIDTH / 2;
-        
         processNode(
           child,
           level + 1,
-          childX,
-          bottomY + VERTICAL_GAP
+          currentX,
+          bottomY + VERTICAL_GAP,
+          childWidth
         );
         
-        currentX += childWidth + HORIZONTAL_GAP * 2 + BRANCH_GAP;
+        // Переходим к следующей позиции
+        currentX += childWidth + BRANCH_GAP;
       }
     } 
-    // Если поколение скрыто, отображаем индикатор скрытых детей
+    // Если поколение скрыто, отображаем индикатор
     else if (hasChildren && isHiddenGeneration) {
-      const centerX = hasSpouse 
-        ? (personX + spouseNode.x + PERSON_WIDTH) / 2 
-        : personX + PERSON_WIDTH / 2;
-      
       const bottomY = personY + PERSON_HEIGHT;
       
-      // Добавляем пунктирную линию вниз для индикации скрытого поколения
       layout.connections.push({
         type: 'hidden-generation',
         x1: centerX,
@@ -275,7 +286,7 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
       });
     }
     
-    return hasSpouse ? PERSON_WIDTH * 2 + HORIZONTAL_GAP : PERSON_WIDTH;
+    return { width: nodeWidth, centerX: centerX };
   };
   
   try {
@@ -311,7 +322,8 @@ export const getBoundaries = (layout) => {
     return { minX: 0, minY: 0, width: 800, height: 600 };
   }
   
-  const padding = 40;
+  // УВЕЛИЧЕННЫЙ padding для предотвращения обрезки
+  const padding = 80;
   
   return {
     minX: minX - padding,

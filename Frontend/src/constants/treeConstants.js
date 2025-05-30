@@ -2,15 +2,19 @@
 
 // Константы для размеров и отступов
 export const TREE_CONSTANTS = {
-  PERSON_WIDTH: 250, // Увеличиваем ширину карточек
+  PERSON_WIDTH: 250, 
   PERSON_HEIGHT: 140,
-  VERTICAL_GAP: 140,
-  HORIZONTAL_GAP: 60, // Увеличиваем отступ между карточками
-  BRANCH_GAP: 120,
+  VERTICAL_GAP: 180, // УВЕЛИЧЕНО: было 140, стало 180
+  HORIZONTAL_GAP: 100, // УВЕЛИЧЕНО: было 60, стало 100
+  BRANCH_GAP: 200, // УВЕЛИЧЕНО: было 120, стало 200
   MIN_SCALE: 0.3,
   MAX_SCALE: 2,
   ZOOM_FACTOR: 1.1,
   DRAG_THRESHOLD: 5,
+  // НОВЫЕ КОНСТАНТЫ для улучшенного позиционирования
+  MIN_CHILD_SPACING: 50, // Минимальное расстояние между детьми
+  SPOUSE_GAP: 80, // Расстояние между супругами
+  GENERATION_PADDING: 100, // Дополнительный отступ между поколениями
 };
 
 // Стили для компонентов

@@ -588,6 +588,10 @@ const FamilyTree = () => {
           }}
           onMouseDown={familyTreeState.selectionMode ? undefined : navigationState.handleMouseDown}
           onDoubleClick={navigationState.handleDoubleClick}
+          // НОВЫЕ touch события
+          onTouchStart={familyTreeState.selectionMode ? undefined : navigationState.handleTouchStart}
+          onTouchMove={familyTreeState.selectionMode ? undefined : navigationState.handleTouchMove}
+          onTouchEnd={familyTreeState.selectionMode ? undefined : navigationState.handleTouchEnd}
         >
           <g transform={`translate(${navigationState.position.x}, ${navigationState.position.y}) scale(${navigationState.scale})`}>
             {renderFamilyTree()}

@@ -45,6 +45,27 @@ body {
   background-color: #ffffffc3;
 }
 
+/* НОВОЕ: Предотвращение автозума на мобильных при фокусе на input */
+input, textarea, select {
+  font-size: 16px !important; /* Минимум 16px предотвращает автозум */
+  transform-origin: left top;
+  transition: none !important;
+}
+
+/* НОВОЕ: Специальные стили для мобильных input */
+@media screen and (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+    zoom: 1 !important;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    font-size: 16px !important;
+    zoom: 1 !important;
+    transform: scale(1) !important;
+  }
+}
+
 /* Улучшения для SVG - БЕЗ transition для лучшей производительности */
 svg {
   user-select: none;
@@ -159,4 +180,26 @@ textarea:focus {
   color: #c0a282;
   text-shadow: 1px 1px 2px rgba(48, 49, 51, 0.1);
   letter-spacing: 0.5px;
+}
+
+/* НОВОЕ: Предотвращение зума на touch устройствах */
+@media screen and (max-device-width: 768px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+}
+
+/* НОВОЕ: Улучшенные touch стили */
+@media (pointer: coarse) {
+  button {
+    min-height: 44px; /* Минимальная высота для touch */
+    min-width: 44px;
+  }
+  
+  /* Отключаем hover эффекты на touch устройствах */
+  button:hover {
+    transform: none;
+    box-shadow: none;
+  }
 }
