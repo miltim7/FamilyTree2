@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { STYLES } from '../constants/treeConstants';
 import PhotoUpload from './PhotoUpload';
 import { findPersonById } from '../utils/familyUtils';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,9 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
     content: ''
   });
   const [loading, setLoading] = useState(false);
+
+  // Блокируем скролл страницы при открытии модального окна
+  useBodyScrollLock(isOpen);
 
   // Получаем список всех персон для выбора
   const getAllPersons = (node, persons = []) => {
@@ -99,7 +103,7 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
         maxHeight: '90vh',
         overflow: 'hidden',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
       }}>
         <h2 style={{
           ...STYLES.modalTitle,

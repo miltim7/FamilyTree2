@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { TREE_CONSTANTS } from '../constants/treeConstants';
 import familyTreeAPI from '../services/api';
 import articlesAPI from '../services/articlesApi';
+import { getDefaultPhoto } from '../utils/familyUtils'; // НОВЫЙ ИМПОРТ
 
 export const useFamilyTree = () => {
   // Основное состояние
@@ -238,7 +239,7 @@ export const useFamilyTree = () => {
     });
   }, []);
 
-  // НОВАЯ ФУНКЦИЯ: Подтвердить редактирование
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Подтвердить редактирование с дефолтными фотографиями
   const confirmEditPerson = useCallback(async () => {
     const { name, gender, photo, lifeYears, profession, birthPlace, biography, personId, isSpouse } = editModal;
     
@@ -250,10 +251,13 @@ export const useFamilyTree = () => {
     try {
       setEditModal(prev => ({ ...prev, loading: true }));
       
+      // НОВАЯ ЛОГИКА: Устанавливаем дефолтную фотографию если не выбрана
+      const finalPhoto = photo && photo.trim() ? photo : getDefaultPhoto(gender);
+      
       const personData = {
         name: name,
         gender: gender,
-        photo: photo || null,
+        photo: finalPhoto, // Используем финальную фотографию
         lifeYears: lifeYears || '',
         profession: profession || '',
         birthPlace: birthPlace || '',
@@ -369,6 +373,7 @@ export const useFamilyTree = () => {
     setSelectionMode('spouse');
   }, [spouseModal.name, showNotification]);
   
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Подтвердить добавление супруга с дефолтной фотографией
   const confirmAddSpouse = useCallback(async () => {
     const { name, gender, photo, lifeYears, profession, birthPlace, biography, targetPersonId } = spouseModal;
     
@@ -385,10 +390,13 @@ export const useFamilyTree = () => {
     try {
       setSpouseModal(prev => ({ ...prev, loading: true }));
       
+      // НОВАЯ ЛОГИКА: Устанавливаем дефолтную фотографию если не выбрана
+      const finalPhoto = photo && photo.trim() ? photo : getDefaultPhoto(gender);
+      
       const spouseData = {
         name: name,
         gender: gender,
-        photo: photo || null,
+        photo: finalPhoto, // Используем финальную фотографию
         lifeYears: lifeYears || '',
         profession: profession || '',
         birthPlace: birthPlace || '',
@@ -457,6 +465,7 @@ export const useFamilyTree = () => {
     setSelectionMode('parent');
   }, [childModal.name, showNotification]);
   
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Подтвердить добавление ребенка с дефолтной фотографией
   const confirmAddChild = useCallback(async () => {
     const { name, gender, photo, lifeYears, profession, birthPlace, biography, parentId } = childModal;
     
@@ -473,10 +482,13 @@ export const useFamilyTree = () => {
     try {
       setChildModal(prev => ({ ...prev, loading: true }));
       
+      // НОВАЯ ЛОГИКА: Устанавливаем дефолтную фотографию если не выбрана
+      const finalPhoto = photo && photo.trim() ? photo : getDefaultPhoto(gender);
+      
       const childData = {
         name: name,
         gender: gender,
-        photo: photo || null,
+        photo: finalPhoto, // Используем финальную фотографию
         lifeYears: lifeYears || '',
         profession: profession || '',
         birthPlace: birthPlace || '',

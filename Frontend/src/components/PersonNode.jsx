@@ -41,8 +41,9 @@ const PersonNode = ({
   // Определяем стили узла - ВСЕ УЗЛЫ ОДНОГО ЦВЕТА
   let nodeStyle = { ...NODE_STYLES.maleNode }; // Используем единый стиль
   
-  // Применяем фильтрацию по ветке
-  if (!shouldShow) {
+  // Применяем фильтрацию по ветке ко всем элементам
+  const isFiltered = !shouldShow;
+  if (isFiltered) {
     nodeStyle = { ...nodeStyle, ...NODE_STYLES.filteredNode };
   }
   
@@ -97,6 +98,22 @@ const PersonNode = ({
   const normalizedId = nodeId.replace(/-spouse$/, '');
   const isBranchSelected = selectedBranch === normalizedId;
   
+  // Стили для фильтрации всех элементов
+  const elementOpacity = isFiltered ? 0.3 : 1;
+  const imageStyle = {
+    cursor: cursorStyle,
+    opacity: elementOpacity,
+    transition: 'opacity 0.25s ease',
+    objectFit: 'cover'
+  };
+  
+  const textStyle = {
+    cursor: cursorStyle,
+    transition: 'opacity 0.25s ease',
+    opacity: elementOpacity,
+    pointerEvents: 'none'
+  };
+  
   return (
     <g 
       style={{
@@ -118,12 +135,12 @@ const PersonNode = ({
         style={{ 
           cursor: cursorStyle,
           transition: 'fill 0.25s ease, stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease',
-          opacity: nodeStyle.opacity || 1
+          opacity: elementOpacity
         }}
         onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
       />
       
-      {/* Фотография - в верху карточки, большего размера */}
+      {/* Фотография - заполняет всю область */}
       {node.photo ? (
         <image
           x={(node.width - 60) / 2}
@@ -132,11 +149,12 @@ const PersonNode = ({
           height={60}
           href={node.photo}
           clipPath="circle(30px at 30px 30px)"
-          style={{ cursor: cursorStyle }}
+          style={imageStyle}
           onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
+          preserveAspectRatio="xMidYMid slice"
         />
       ) : (
-        <g>
+        <g style={{ opacity: elementOpacity, transition: 'opacity 0.25s ease' }}>
           <circle
             cx={node.width / 2}
             cy={40}
@@ -165,12 +183,15 @@ const PersonNode = ({
         </g>
       )}
       
-      {/* Иконка ветки родственника - только для основных персон (не супругов) */}
+      {/* ОБНОВЛЕННАЯ иконка ветки родственника - только для основных персон (не супругов) */}
       {!isSpouse && (
         <g
           style={{
             ...NODE_STYLES.branchIcon,
-            opacity: isHovered ? 1 : 0,
+            // НОВАЯ ЛОГИКА: показываем иконку если:
+            // 1. При hover и не отфильтрована ИЛИ
+            // 2. Ветка активна (независимо от фильтрации)
+            opacity: (isHovered && !isFiltered) || isBranchSelected ? 1 : 0,
             transition: 'opacity 0.3s ease'
           }}
           onClick={(e) => {
@@ -227,16 +248,13 @@ const PersonNode = ({
         </g>
       )}
       
-      {/* Имя персоны - под фотографией */}
+      {/* Текст имени - с применением фильтрации */}
       <text
         x={node.width / 2}
         y={85}
         style={{
           ...NODE_STYLES.nodeText,
-          cursor: cursorStyle,
-          transition: 'opacity 0.25s ease',
-          opacity: nodeStyle.opacity || 1,
-          pointerEvents: 'none',
+          ...textStyle,
           fontSize: '13px',
           fontWeight: 'bold'
         }}
@@ -251,10 +269,7 @@ const PersonNode = ({
           y={100}
           style={{
             ...NODE_STYLES.nodeText,
-            cursor: cursorStyle,
-            transition: 'opacity 0.25s ease',
-            opacity: nodeStyle.opacity || 1,
-            pointerEvents: 'none',
+            ...textStyle,
             fontSize: '13px',
             fontWeight: 'bold'
           }}
@@ -263,16 +278,13 @@ const PersonNode = ({
         </text>
       )}
       
-      {/* Годы жизни - под именем */}
+      {/* Текст годов жизни - с применением фильтрации */}
       <text
         x={node.width / 2}
         y={node.name && node.name.length > 25 ? 115 : 100}
         style={{
           ...NODE_STYLES.nodeSubText,
-          cursor: cursorStyle,
-          transition: 'opacity 0.25s ease',
-          opacity: nodeStyle.opacity || 1,
-          pointerEvents: 'none',
+          ...textStyle,
           fontSize: '11px'
         }}
       >

@@ -1,6 +1,14 @@
 // Frontend\src\services\articlesApi.js
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// ОБНОВЛЕННЫЙ API_BASE_URL для разных окружений
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://familytree2.onrender.com/api';  // ВАШ РЕАЛЬНЫЙ URL
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ArticlesAPI {
   // Базовый метод для запросов

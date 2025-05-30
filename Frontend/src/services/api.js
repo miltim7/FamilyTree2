@@ -1,6 +1,14 @@
 // Frontend\src\services\api.js
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// ОБНОВЛЕННЫЙ API_BASE_URL для разных окружений
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://familytree2.onrender.com/api';  // ВАШ РЕАЛЬНЫЙ URL
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class FamilyTreeAPI {
   // Базовый метод для запросов
@@ -56,7 +64,7 @@ class FamilyTreeAPI {
     });
   }
 
-  // НОВЫЙ МЕТОД: Редактировать персону
+  // Редактировать персону
   async editPerson(personId, personData, isSpouse = false) {
     return await this.request(`/family/person/${personId}`, {
       method: 'PUT',
@@ -64,7 +72,7 @@ class FamilyTreeAPI {
     });
   }
 
-  // НОВЫЙ МЕТОД: Удалить персону
+  // Удалить персону
   async deletePerson(personId, isSpouse = false) {
     return await this.request(`/family/person/${personId}`, {
       method: 'DELETE',

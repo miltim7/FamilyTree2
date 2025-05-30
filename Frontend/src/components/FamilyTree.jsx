@@ -15,10 +15,10 @@ import { PersonInfoModal, EditPersonModal, AddSpouseModal, AddChildModal } from 
 const FamilyTree = () => {
   // НОВОЕ: Получаем статус авторизации
   const { isAuthenticated } = useAuth();
-  
+
   // Используем кастомные хуки
   const familyTreeState = useFamilyTree();
-  
+
   // Состояние для дерева
   const [treeLayout, setTreeLayout] = useState(null);
   const [boundaries, setBoundaries] = useState({ minX: 0, minY: 0, width: 800, height: 600 });
@@ -32,13 +32,13 @@ const FamilyTree = () => {
       updateTreeLayout();
     }
   }, [familyTreeState.familyData, familyTreeState.hiddenGenerations]);
-  
+
   // Обновление макета дерева
   const updateTreeLayout = () => {
     try {
       const layout = generateTreeLayout(familyTreeState.familyData, familyTreeState.hiddenGenerations);
       const newBoundaries = getBoundaries(layout);
-      
+
       setTreeLayout(layout);
       setBoundaries(newBoundaries);
     } catch (error) {
@@ -49,38 +49,38 @@ const FamilyTree = () => {
   // Функция проверки, должен ли узел быть виден
   const shouldShowNode = (nodeId) => {
     if (!familyTreeState.selectedBranch) return true;
-    
+
     const isSpouse = nodeId.includes('-spouse');
     const normalizedId = nodeId.replace(/-spouse$/, '');
     const bloodRelatives = getBloodRelatives(familyTreeState.familyData, familyTreeState.selectedBranch);
-    
+
     if (bloodRelatives.has(normalizedId)) return true;
-    
+
     if (isSpouse) {
       return bloodRelatives.has(normalizedId);
     }
-    
+
     return false;
   };
 
   // Обработка клика по узлу
   const handleNodeClick = (e, nodeId, nodeType, nodeName) => {
     if (!nodeId) return;
-    
+
     e.stopPropagation();
-    
+
     if (familyTreeState.selectionMode === 'parent') {
       handleParentSelection(nodeId);
-    } 
+    }
     else if (familyTreeState.selectionMode === 'spouse') {
       handleSpouseSelection(nodeId);
-    } 
+    }
     else {
       // Показываем модальное окно с информацией о персоне
       const isSpouse = nodeType === 'spouse';
       const baseId = nodeId.replace(/-spouse$/, '');
       const person = findPersonById(familyTreeState.familyData, baseId);
-      
+
       if (person) {
         const personData = isSpouse ? person.spouse : person;
         familyTreeState.setPersonInfoModal({
@@ -98,65 +98,65 @@ const FamilyTree = () => {
     try {
       const baseId = personId.replace(/-spouse$/, '');
       const person = findPersonById(familyTreeState.familyData, baseId);
-      
+
       if (!person) {
         console.error('Родитель не найден:', baseId);
         familyTreeState.showNotification("Родитель не найден");
         return;
       }
-      
+
       let parentName = person.name || `ID: ${baseId}`;
       if (person.spouse) {
         parentName += ` и ${person.spouse.name || 'Супруг(а)'}`;
       }
-      
+
       familyTreeState.setChildModal({
         ...familyTreeState.childModal,
         parentId: baseId,
         parentName: parentName,
         isOpen: true
       });
-      
+
       familyTreeState.setSelectionMode(null);
     } catch (error) {
       console.error('Ошибка при выборе родителя:', error);
       familyTreeState.showNotification("Произошла ошибка при выборе родителя");
     }
   };
-  
+
   // Обработка выбора персоны для супруга
   const handleSpouseSelection = (nodeId) => {
     try {
       const isSpouse = nodeId.includes('-spouse');
-      
+
       if (isSpouse) {
         familyTreeState.showNotification("Нельзя добавить супруга к супругу");
         return;
       }
-      
+
       const baseId = nodeId.replace(/-spouse$/, '');
       const person = findPersonById(familyTreeState.familyData, baseId);
-      
+
       if (!person) {
         familyTreeState.showNotification("Персона не найдена");
         console.error("Персона не найдена:", baseId);
         return;
       }
-      
+
       if (person.spouse) {
         familyTreeState.showNotification("У этой персоны уже есть супруг(-а)");
         return;
       }
-      
+
       familyTreeState.setSpouseModal(prev => ({
         ...prev,
         targetPersonId: baseId,
         targetPersonName: person.name,
         isOpen: true
       }));
-      
+
       familyTreeState.setSelectionMode(null);
-      
+
     } catch (error) {
       console.error("Ошибка при выборе персоны:", error);
       familyTreeState.showNotification("Произошла ошибка при выборе персоны");
@@ -221,7 +221,7 @@ const FamilyTree = () => {
           <p style={{ fontSize: '0.875rem', color: '#303133', marginBottom: '0.5rem', fontFamily: 'Montserrat, sans-serif' }}>
             Убедитесь, что сервер запущен на порту 5000
           </p>
-          <button 
+          <button
             onClick={familyTreeState.loadFamilyData}
             style={{
               padding: '0.5rem 1rem',
@@ -264,7 +264,7 @@ const FamilyTree = () => {
           <p style={{ fontSize: '1rem', color: '#303133', marginBottom: '1rem', fontFamily: 'Montserrat, sans-serif' }}>
             {familyTreeState.error}
           </p>
-          <button 
+          <button
             onClick={familyTreeState.loadFamilyData}
             style={{
               padding: '0.5rem 1rem',
@@ -289,18 +289,19 @@ const FamilyTree = () => {
     if (!treeLayout || !treeLayout.nodes || !Array.isArray(treeLayout.nodes) || treeLayout.nodes.length === 0) {
       return <text x="100" y="100" fontSize="16" fill="#303133" fontFamily="Montserrat, sans-serif">Нет данных для отображения</text>;
     }
-    
+
     return (
       <g>
         {/* Соединительные линии */}
-        <TreeConnections 
+        <TreeConnections
           connections={treeLayout.connections}
           hoveredPerson={familyTreeState.hoveredPerson}
           setHoveredPerson={familyTreeState.setHoveredPerson}
           isGenerationHidden={familyTreeState.isGenerationHidden}
           onToggleGeneration={familyTreeState.toggleGeneration}
+          shouldShowNode={shouldShowNode} // НОВЫЙ ПАРАМЕТР
         />
-        
+
         {/* Узлы (персоны и супруги) */}
         {treeLayout.nodes.map((node, index) => (
           <PersonNode
@@ -320,28 +321,28 @@ const FamilyTree = () => {
       </g>
     );
   };
-  
+
   // Основной рендер
   return (
-    <div style={STYLES.container}>
-      
-      {/* ОБНОВЛЕННЫЙ БЛОК: Кнопки только для авторизованных пользователей */}
+    <div id='tree-container' style={STYLES.container}>
+
+      {/* УПРОЩЕННЫЙ АДАПТИВНЫЙ БЛОК КНОПОК */}
       <div style={{
-        position: 'relative',
-        width: '100%',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         marginBottom: '1rem',
-        marginLeft: '30px',
-        height: '60px'
+        padding: '0 1rem',
+        width: '100%'
       }}>
-        
-        {/* ЛЕВАЯ ГРУППА: Кнопки управления */}
+
+        {/* ЛЕВАЯ ГРУППА: Основные кнопки */}
         <div style={{
-          position: 'absolute',
-          left: '-1rem',
-          top: '30px',
           display: 'flex',
-          gap: '0.5rem',
           flexWrap: 'wrap',
+          gap: '0.5rem',
           alignItems: 'center'
         }}>
           {/* CRUD кнопки - только для авторизованных */}
@@ -349,40 +350,43 @@ const FamilyTree = () => {
             <>
               <button
                 onClick={familyTreeState.openChildModal}
-                style={{ 
-                  ...STYLES.button, 
+                style={{
+                  ...STYLES.button,
                   ...STYLES.greenButton,
                   opacity: familyTreeState.loading ? 0.5 : 1,
-                  fontSize: '0.875rem',
-                  padding: '0.4rem 0.8rem'
+                  fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
+                  padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
+                  whiteSpace: 'nowrap'
                 }}
                 disabled={familyTreeState.loading}
               >
-                Добавить ребенка
+                {window.innerWidth < 768 ? '+ Ребенок' : 'Добавить ребенка'}
               </button>
-              
+
               <button
                 onClick={familyTreeState.openSpouseModal}
-                style={{ 
-                  ...STYLES.button, 
+                style={{
+                  ...STYLES.button,
                   ...STYLES.purpleButton,
                   opacity: familyTreeState.loading ? 0.5 : 1,
-                  fontSize: '0.875rem',
-                  padding: '0.4rem 0.8rem'
+                  fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
+                  padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
+                  whiteSpace: 'nowrap'
                 }}
                 disabled={familyTreeState.loading}
               >
-                Добавить супруга(-у)
+                {window.innerWidth < 768 ? '+ Супруг' : 'Добавить супруга(-у)'}
               </button>
 
               <button
                 onClick={familyTreeState.loadFamilyData}
-                style={{ 
-                  ...STYLES.button, 
+                style={{
+                  ...STYLES.button,
                   ...STYLES.grayButton,
                   opacity: familyTreeState.loading ? 0.5 : 1,
-                  fontSize: '0.875rem',
-                  padding: '0.4rem 0.8rem'
+                  fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
+                  padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
+                  whiteSpace: 'nowrap'
                 }}
                 disabled={familyTreeState.loading}
               >
@@ -394,172 +398,173 @@ const FamilyTree = () => {
           {/* Навигационные кнопки - доступны всем */}
           <button
             onClick={navigationState.centerTree}
-            style={{ 
-              ...STYLES.button, 
+            style={{
+              ...STYLES.button,
               ...STYLES.defaultViewButton,
-              fontSize: '0.875rem',
-              padding: '0.4rem 0.8rem'
+              fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
+              padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
+              whiteSpace: 'nowrap'
             }}
           >
-            Центрировать
+            {window.innerWidth < 768 ? 'Центр' : 'Центрировать'}
           </button>
-          
+
           {/* Условные кнопки - доступны всем */}
           {familyTreeState.selectedBranch && (
             <button
               onClick={() => familyTreeState.setSelectedBranch(null)}
-              style={{ 
-                ...STYLES.button, 
+              style={{
+                ...STYLES.button,
                 ...STYLES.defaultViewButton,
-                fontSize: '0.875rem',
-                padding: '0.4rem 0.8rem'
+                fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
+                padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
+                whiteSpace: 'nowrap'
               }}
             >
-              Показать всех
+              {window.innerWidth < 768 ? 'Все' : 'Показать всех'}
             </button>
           )}
-          
+
           {Object.keys(familyTreeState.hiddenGenerations).length > 0 && (
             <button
               onClick={familyTreeState.resetHiddenGenerations}
-              style={{ 
-                ...STYLES.button, 
+              style={{
+                ...STYLES.button,
                 ...STYLES.defaultViewButton,
-                fontSize: '0.875rem',
-                padding: '0.4rem 0.8rem'
+                fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
+                padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
+                whiteSpace: 'nowrap'
               }}
             >
-              Вид по умолчанию
+              {window.innerWidth < 768 ? 'Сброс' : 'Вид по умолчанию'}
             </button>
           )}
         </div>
 
-        {/* ПРАВАЯ ГРУППА: Навигационные кнопки - доступны всем */}
+        {/* ПРАВАЯ ГРУППА: Навигационные кнопки со стрелками */}
         <div style={{
-          position: 'absolute',
-          right: '20px',
-          top: '30px',
           display: 'flex',
           gap: '0.25rem',
-          alignItems: 'center'
+          alignItems: 'center',
+          flexShrink: 0
         }}>
-          
+
           <button
             onClick={navigationState.moveUp}
             style={{
               ...STYLES.button,
               ...STYLES.defaultViewButton,
-              padding: '0.5rem',
-              minWidth: '36px',
-              height: '36px',
+              padding: window.innerWidth < 768 ? '0.4rem' : '0.5rem',
+              minWidth: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}
             title="Переместить вверх"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width={window.innerWidth < 768 ? "12" : "16"} height={window.innerWidth < 768 ? "12" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 15l-6-6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          
+
           <button
             onClick={navigationState.moveLeft}
             style={{
               ...STYLES.button,
               ...STYLES.defaultViewButton,
-              padding: '0.5rem',
-              minWidth: '36px',
-              height: '36px',
+              padding: window.innerWidth < 768 ? '0.4rem' : '0.5rem',
+              minWidth: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}
             title="Переместить влево"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width={window.innerWidth < 768 ? "12" : "16"} height={window.innerWidth < 768 ? "12" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          
+
           <button
             onClick={navigationState.moveDown}
             style={{
               ...STYLES.button,
               ...STYLES.defaultViewButton,
-              padding: '0.5rem',
-              minWidth: '36px',
-              height: '36px',
+              padding: window.innerWidth < 768 ? '0.4rem' : '0.5rem',
+              minWidth: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}
             title="Переместить вниз"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width={window.innerWidth < 768 ? "12" : "16"} height={window.innerWidth < 768 ? "12" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          
+
           <button
             onClick={navigationState.moveRight}
             style={{
               ...STYLES.button,
               ...STYLES.defaultViewButton,
-              padding: '0.5rem',
-              minWidth: '36px',
-              height: '36px',
+              padding: window.innerWidth < 768 ? '0.4rem' : '0.5rem',
+              minWidth: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}
             title="Переместить вправо"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width={window.innerWidth < 768 ? "12" : "16"} height={window.innerWidth < 768 ? "12" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          
+
           <button
             onClick={navigationState.zoomIn}
             style={{
               ...STYLES.button,
               ...STYLES.defaultViewButton,
-              padding: '0.5rem',
-              minWidth: '36px',
-              height: '36px',
+              padding: window.innerWidth < 768 ? '0.4rem' : '0.5rem',
+              minWidth: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}
             title="Увеличить масштаб"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width={window.innerWidth < 768 ? "12" : "16"} height={window.innerWidth < 768 ? "12" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          
+
           <button
             onClick={navigationState.zoomOut}
             style={{
               ...STYLES.button,
               ...STYLES.defaultViewButton,
-              padding: '0.5rem',
-              minWidth: '36px',
-              height: '36px',
+              padding: window.innerWidth < 768 ? '0.4rem' : '0.5rem',
+              minWidth: window.innerWidth < 768 ? '32px' : '36px',
+              height: window.innerWidth < 768 ? '32px' : '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}
             title="Уменьшить масштаб"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg width={window.innerWidth < 768 ? "12" : "16"} height={window.innerWidth < 768 ? "12" : "16"} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
         </div>
       </div>
-      
+
       {/* Контейнер с тонкой границей */}
       <div style={{
         ...STYLES.svgContainer,
@@ -571,12 +576,12 @@ const FamilyTree = () => {
             {familyTreeState.selectionMode === 'parent' ? 'Режим выбора родителя' : 'Режим выбора персоны для супруга'}
           </div>
         )}
-        
+
         <svg
           ref={navigationState.svgRef}
           width="100%"
           height="100%"
-          style={{ 
+          style={{
             cursor: navigationState.isDragging ? 'grabbing' : (familyTreeState.selectionMode ? 'pointer' : 'grab'),
             userSelect: 'none',
             touchAction: 'none'
@@ -591,15 +596,15 @@ const FamilyTree = () => {
       </div>
 
       {/* Последние статьи */}
-      <RecentArticles 
+      <RecentArticles
         articles={familyTreeState.recentArticles}
         loading={familyTreeState.articlesLoading}
       />
-      
+
       {/* ОБНОВЛЕННЫЕ модальные окна - только для авторизованных */}
       {isAuthenticated && (
         <>
-          <PersonInfoModal 
+          <PersonInfoModal
             modal={familyTreeState.personInfoModal}
             onClose={familyTreeState.cancelModals}
             onEdit={familyTreeState.openEditModal}
@@ -607,22 +612,22 @@ const FamilyTree = () => {
             isAuthenticated={isAuthenticated}
           />
 
-          <EditPersonModal 
+          <EditPersonModal
             modal={familyTreeState.editModal}
             onModalChange={(updates) => familyTreeState.setEditModal(prev => ({ ...prev, ...updates }))}
             onClose={familyTreeState.cancelModals}
             onConfirm={familyTreeState.confirmEditPerson}
           />
-          
-          <AddSpouseModal 
+
+          <AddSpouseModal
             modal={familyTreeState.spouseModal}
             onModalChange={(updates) => familyTreeState.setSpouseModal(prev => ({ ...prev, ...updates }))}
             onClose={familyTreeState.cancelModals}
             onStartSelection={familyTreeState.startSpousePersonSelection}
             onConfirm={familyTreeState.confirmAddSpouse}
           />
-          
-          <AddChildModal 
+
+          <AddChildModal
             modal={familyTreeState.childModal}
             onModalChange={(updates) => familyTreeState.setChildModal(prev => ({ ...prev, ...updates }))}
             onClose={familyTreeState.cancelModals}
@@ -634,15 +639,15 @@ const FamilyTree = () => {
 
       {/* Модальное окно персоны для неавторизованных (только просмотр) */}
       {!isAuthenticated && (
-        <PersonInfoModal 
+        <PersonInfoModal
           modal={familyTreeState.personInfoModal}
           onClose={familyTreeState.cancelModals}
-          onEdit={() => {}}
-          onDelete={() => {}}
+          onEdit={() => { }}
+          onDelete={() => { }}
           isAuthenticated={isAuthenticated}
         />
       )}
-      
+
       {/* Уведомление о режиме выбора - только для авторизованных */}
       {isAuthenticated && familyTreeState.selectionMode && (
         <div style={STYLES.selectionModeNotice}>
@@ -650,7 +655,7 @@ const FamilyTree = () => {
             {familyTreeState.selectionMode === 'parent' ? 'Режим выбора родителя' : 'Режим выбора персоны для супруга'}
           </div>
           <div>
-            {familyTreeState.selectionMode === 'parent' 
+            {familyTreeState.selectionMode === 'parent'
               ? 'Выберите родителя для ребенка. Нажмите на любую персону в дереве.'
               : 'Выберите персону для добавления супруга(-и). Нажмите на персону без супруга.'
             }
@@ -663,7 +668,7 @@ const FamilyTree = () => {
           </button>
         </div>
       )}
-      
+
       {/* Уведомления */}
       {familyTreeState.notification && (
         <div style={{

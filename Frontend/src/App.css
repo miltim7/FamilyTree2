@@ -3,9 +3,31 @@
 /* Импорт шрифта Montserrat */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
+/* ИСПРАВЛЕННОЕ подключение кастомного шрифта Miroslav */
+@font-face {
+  font-family: 'Miroslav';
+  src: url('../public/fonts/MIROSLN.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 /* Базовые стили для приложения */
 .App {
   text-align: center;
+  /* НОВОЕ: Отступ сверху для фиксированной навигации */
+  padding-top: 120px; /* Примерная высота навигации + запас */
+}
+
+/* НОВОЕ: Адаптивный отступ для мобильных устройств */
+@media (max-width: 767px) {
+  .App {
+    padding-top: 140px; /* Больший отступ для мобильной навигации */
+  }
 }
 
 /* Глобальные сбросы */
@@ -127,4 +149,14 @@ textarea:focus {
   outline: none;
   border-color: #c0a282;
   box-shadow: 0 0 0 3px rgba(192, 162, 130, 0.1);
+}
+
+/* Класс для фамильного названия */
+.family-name {
+  font-family: 'Miroslav', Arial, sans-serif !important;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #c0a282;
+  text-shadow: 1px 1px 2px rgba(48, 49, 51, 0.1);
+  letter-spacing: 0.5px;
 }

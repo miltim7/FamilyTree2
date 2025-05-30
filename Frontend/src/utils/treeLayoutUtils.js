@@ -81,13 +81,14 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
       
       layout.nodes.push(spouseNode);
       
-      // Соединение между супругами
+      // ОБНОВЛЕННОЕ соединение между супругами с nodeId
       layout.connections.push({
         type: 'couple',
         x1: personX + PERSON_WIDTH,
         y1: personY + PERSON_HEIGHT / 2,
         x2: spouseX,
-        y2: personY + PERSON_HEIGHT / 2
+        y2: personY + PERSON_HEIGHT / 2,
+        nodeId: node.id // ДОБАВЛЯЕМ nodeId
       });
     }
     
@@ -141,12 +142,14 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
         const person2X = spouseNode.x + PERSON_WIDTH / 2;
         const midY = bottomY + VERTICAL_GAP / 4;
         
+        // ОБНОВЛЯЕМ все соединения с nodeId
         layout.connections.push({
           type: 'parent-junction',
           x1: person1X,
           y1: bottomY,
           x2: person1X,
-          y2: midY
+          y2: midY,
+          nodeId: node.id // ДОБАВЛЯЕМ nodeId
         });
         
         layout.connections.push({
@@ -154,7 +157,8 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
           x1: person2X,
           y1: bottomY,
           x2: person2X,
-          y2: midY
+          y2: midY,
+          nodeId: node.id // ДОБАВЛЯЕМ nodeId
         });
         
         layout.connections.push({
@@ -162,7 +166,8 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
           x1: person1X,
           y1: midY,
           x2: person2X,
-          y2: midY
+          y2: midY,
+          nodeId: node.id // ДОБАВЛЯЕМ nodeId
         });
         
         // Главная линия с кнопкой управления
@@ -202,14 +207,15 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
         const childWidth = childrenWidths[i];
         const childCenterX = currentX + childWidth / 2;
         
-        // Соединительные линии
+        // ОБНОВЛЯЕМ соединительные линии с nodeId
         if (node.children.length > 1) {
           layout.connections.push({
             type: 'child-connection',
             x1: centerX,
             y1: junctionY,
             x2: childCenterX,
-            y2: junctionY
+            y2: junctionY,
+            nodeId: node.id // ДОБАВЛЯЕМ nodeId родителя
           });
           
           layout.connections.push({
@@ -217,7 +223,8 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
             x1: childCenterX,
             y1: junctionY,
             x2: childCenterX,
-            y2: bottomY + VERTICAL_GAP
+            y2: bottomY + VERTICAL_GAP,
+            nodeId: child.id // ДОБАВЛЯЕМ nodeId ребенка
           });
         } else {
           layout.connections.push({
@@ -225,7 +232,8 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
             x1: centerX,
             y1: junctionY,
             x2: centerX,
-            y2: bottomY + VERTICAL_GAP
+            y2: bottomY + VERTICAL_GAP,
+            nodeId: child.id // ДОБАВЛЯЕМ nodeId ребенка
           });
         }
         

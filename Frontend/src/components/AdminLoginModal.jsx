@@ -2,11 +2,15 @@
 
 import React, { useState } from 'react';
 import { STYLES } from '../constants/treeConstants';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const AdminLoginModal = ({ isOpen, onClose, onLogin }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Блокируем скролл страницы при открытии модального окна
+  useBodyScrollLock(isOpen);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

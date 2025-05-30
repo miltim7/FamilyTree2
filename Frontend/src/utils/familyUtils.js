@@ -1,5 +1,16 @@
 // Frontend\src\utils\familyUtils.js
 
+// Функция для получения дефолтной фотографии по полу
+export const getDefaultPhoto = (gender) => {
+  if (gender === 'female') {
+    return '/assets/default_female.jpg';
+  } else if (gender === 'male') {
+    return '/assets/default_male.jpg';
+  }
+  // Для неопределенного пола возвращаем мужскую по умолчанию
+  return '/assets/default_male.jpg';
+};
+
 // Функция поиска персоны по ID
 export const findPersonById = (root, id) => {
   if (!root || !id) return null;

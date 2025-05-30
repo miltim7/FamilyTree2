@@ -4,10 +4,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { STYLES, NODE_STYLES } from '../constants/treeConstants';
 import PhotoUpload from './PhotoUpload';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 // Модальное окно с информацией о персоне
 export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthenticated }) => {
   const navigate = useNavigate();
+  
+  // Блокируем скролл страницы при открытии модального окна
+  useBodyScrollLock(modal.isOpen);
   
   if (!modal.isOpen || !modal.person) return null;
 
@@ -40,7 +44,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
         flexDirection: 'column',
         overflow: 'hidden',
         fontFamily: 'Montserrat, sans-serif',
-        position: 'relative'
+        position: 'relative',
       }}>
         
         {/* Заголовок */}
@@ -91,7 +95,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
             {modal.isSpouse ? 'Информация о супруге(-е)' : 'Информация о персоне'}
           </h2>
 
-          {/* ОБНОВЛЕННЫЕ кнопки действий - только для авторизованных */}
+          {/* Кнопки действий - только для авторизованных */}
           {isAuthenticated && (
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <button
@@ -152,7 +156,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
             </div>
           )}
 
-          {/* НОВОЕ: Сообщение для неавторизованных */}
+          {/* Сообщение для неавторизованных */}
           {!isAuthenticated && (
             <div style={{
               backgroundColor: '#ffffffc3',
@@ -533,13 +537,16 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
   );
 };
 
-// Остальные модальные окна остаются без изменений (они вызываются только для авторизованных)
+// Модальное окно редактирования персоны
 export const EditPersonModal = ({ 
   modal, 
   onModalChange, 
   onClose, 
   onConfirm 
 }) => {
+  // Блокируем скролл страницы при открытии модального окна
+  useBodyScrollLock(modal.isOpen);
+  
   if (!modal.isOpen) return null;
 
   return (
@@ -668,6 +675,7 @@ export const EditPersonModal = ({
   );
 };
 
+// Модальное окно добавления супруга
 export const AddSpouseModal = ({ 
   modal, 
   onModalChange, 
@@ -675,6 +683,9 @@ export const AddSpouseModal = ({
   onStartSelection, 
   onConfirm 
 }) => {
+  // Блокируем скролл страницы при открытии модального окна
+  useBodyScrollLock(modal.isOpen);
+  
   if (!modal.isOpen) return null;
 
   return (
@@ -821,6 +832,7 @@ export const AddSpouseModal = ({
   );
 };
 
+// Модальное окно добавления ребенка
 export const AddChildModal = ({ 
   modal, 
   onModalChange, 
@@ -828,6 +840,9 @@ export const AddChildModal = ({
   onStartSelection, 
   onConfirm 
 }) => {
+  // Блокируем скролл страницы при открытии модального окна
+  useBodyScrollLock(modal.isOpen);
+  
   if (!modal.isOpen) return null;
 
   return (

@@ -8,7 +8,8 @@ const TreeConnections = ({
   hoveredPerson, 
   setHoveredPerson,
   isGenerationHidden,
-  onToggleGeneration 
+  onToggleGeneration,
+  shouldShowNode // Функция для проверки видимости узла
 }) => {
   if (!connections || !Array.isArray(connections)) {
     return null;
@@ -20,6 +21,34 @@ const TreeConnections = ({
         if (!conn) return null;
         
         const isDashed = conn.type === 'hidden-generation';
+        
+        // УЛУЧШЕННАЯ ЛОГИКА: Определяем прозрачность линии на основе видимости связанных узлов
+        let lineOpacity = 1;
+        
+        if (shouldShowNode && conn.nodeId) {
+          // Проверяем видимость основного узла
+          const nodeVisible = shouldShowNode(conn.nodeId);
+          // Проверяем видимость супруга
+          const spouseVisible = shouldShowNode(`${conn.nodeId}-spouse`);
+          
+          // Для разных типов соединений применяем разную логику
+          if (conn.type === 'couple') {
+            // Линия между супругами - если один из них не виден, линия потухает
+            if (!nodeVisible || !spouseVisible) {
+              lineOpacity = 0.3;
+            }
+          } else if (conn.type === 'parent-junction' || conn.type === 'child-connection') {
+            // Линии родитель-ребенок - если родитель не виден, линия потухает
+            if (!nodeVisible && !spouseVisible) {
+              lineOpacity = 0.3;
+            }
+          } else if (conn.type === 'hidden-generation') {
+            // Пунктирные линии скрытых поколений
+            if (!nodeVisible && !spouseVisible) {
+              lineOpacity = 0.3;
+            }
+          }
+        }
         
         return (
           <g key={`conn-group-${idx}`}>
@@ -33,14 +62,14 @@ const TreeConnections = ({
               strokeWidth={NODE_STYLES.connection.strokeWidth}
               strokeDasharray={isDashed ? "8,4" : "0"}
               style={{
-                opacity: isDashed ? 0.7 : 1,
+                opacity: isDashed ? 0.7 * lineOpacity : lineOpacity, // Применяем фильтрацию
                 transition: 'opacity 0.25s ease'
               }}
             />
             
             {/* Текст для скрытого поколения */}
             {isDashed && conn.isHidden && (
-              <g>
+              <g style={{ opacity: lineOpacity, transition: 'opacity 0.25s ease' }}>
                 {/* Фон для текста для лучшей читаемости */}
                 <rect
                   x={conn.x1 + 10}
@@ -67,7 +96,8 @@ const TreeConnections = ({
                 key={`toggle-${idx}`}
                 style={{
                   ...NODE_STYLES.lineToggleButton,
-                  opacity: (isGenerationHidden(conn.nodeId) || hoveredPerson === conn.nodeId || hoveredPerson === `${conn.nodeId}-spouse`) ? 1 : 0,
+                  // Показываем кнопку только если узел виден и есть hover или поколение скрыто
+                  opacity: (isGenerationHidden(conn.nodeId) || hoveredPerson === conn.nodeId || hoveredPerson === `${conn.nodeId}-spouse`) && lineOpacity > 0.5 ? 1 : 0,
                   transition: 'opacity 0.3s ease'
                 }}
                 onClick={(e) => {

@@ -11,22 +11,43 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// НОВАЯ КОНСТАНТА: Пароль администратора
-const ADMIN_PASSWORD = 'admin123';
+// ОБНОВЛЕННАЯ КОНСТАНТА: Пароль администратора из переменных окружения
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // Пути к файлам
 const DATA_FILE = path.join(__dirname, 'data', 'family-data.json');
 const ARTICLES_FILE = path.join(__dirname, 'data', 'articles.json');
 const BACKUP_DIR = path.join(__dirname, 'backups');
 
-// Middleware
+// ОБНОВЛЕННЫЙ Middleware для продакшена
 app.use(helmet());
+
+// ОБНОВЛЕННЫЙ CORS для продакшена
+const allowedOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://family-tree2.vercel.app',     // ВАШ FRONTEND URL
+    'https://familytree2.onrender.com',    // ВАШ BACKEND URL
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: function (origin, callback) {
+        // Разрешаем запросы без origin (мобильные приложения и т.д.)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('CORS blocked origin:', origin);
+            callback(new Error('Не разрешено CORS'));
+        }
+    },
     credentials: true
 }));
+
 app.use(express.json({ limit: '50mb' }));
-app.use(morgan('combined'));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Инициализация данных при старте сервера
 const initializeData = async () => {
@@ -40,14 +61,22 @@ const initializeData = async () => {
         if (!dataExists) {
             const defaultData = {
                 id: "root-1",
-                name: "Основатель рода",
+                name: "Основатель рода Шуховцевых",
                 gender: "male",
-                photo: null,
+                photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
                 lifeYears: "1900-1980",
                 profession: "Основатель семьи",
                 birthPlace: "Россия",
-                biography: "Здесь будет история основателя вашего рода",
-                spouse: null,
+                biography: "Здесь будет история основателя рода Шуховцевых-Шеховцевых",
+                spouse: {
+                    name: "Основательница рода",
+                    gender: "female",
+                    photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
+                    lifeYears: "1905-1985",
+                    profession: "Домохозяйка",
+                    birthPlace: "Россия",
+                    biography: "Жена основателя рода"
+                },
                 children: []
             };
             
@@ -58,7 +87,19 @@ const initializeData = async () => {
         // Инициализация файла статей
         const articlesExists = await fs.pathExists(ARTICLES_FILE);
         if (!articlesExists) {
-            const defaultArticles = [];
+            const defaultArticles = [
+                {
+                    id: uuidv4(),
+                    personId: "root-1",
+                    personName: "Основатель рода Шуховцевых",
+                    title: "История семьи Шуховцевых-Шеховцевых",
+                    photo: "https://images.unsplash.com/photo-1516571748831-5d81767b788d?w=400&h=300&fit=crop",
+                    description: "Первая статья о истории нашей семьи",
+                    content: "Здесь будет размещена подробная история семьи Шуховцевых-Шеховцевых, их происхождения, традиций и важных событий.",
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
             await fs.writeJSON(ARTICLES_FILE, defaultArticles, { spaces: 2 });
             console.log('Создан файл статей по умолчанию');
         }
@@ -66,6 +107,9 @@ const initializeData = async () => {
         console.error('Ошибка инициализации:', error);
     }
 };
+
+// ... ВЕСЬ ОСТАЛЬНОЙ КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ ...
+// (все ваши API routes, утилиты и функции остаются точно такими же)
 
 // Утилиты для работы с данными
 const readFamilyData = async () => {
@@ -678,6 +722,7 @@ const startServer = async () => {
             console.log('====================================');
             console.log(`Family Tree Server запущен!`);
             console.log(`Порт: ${PORT}`);
+            console.log(`Режим: ${process.env.NODE_ENV || 'development'}`);
             console.log(`API: http://localhost:${PORT}/api/family`);
             console.log(`API статей: http://localhost:${PORT}/api/articles`);
             console.log(`API авторизации: http://localhost:${PORT}/api/auth`);
