@@ -88,7 +88,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
             marginBottom: '1rem',
             marginRight: '3rem'
           }}>
-            Информация о персоне
+            {modal.isSpouse ? 'Информация о супруге(-е)' : 'Информация о персоне'}
           </h2>
 
           {/* Кнопки действий */}
@@ -309,168 +309,199 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
             </div>
           )}
 
-          {/* ОБНОВЛЕННЫЙ РАЗДЕЛ: Статьи персоны */}
-          <div>
-            <h4 style={{
-              fontSize: '1.125rem',
-              fontWeight: '600',
-              color: '#303133',
-              marginBottom: '1rem',
-              fontFamily: 'Montserrat, sans-serif',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Статьи ({modal.articles ? modal.articles.length : 0})
-            </h4>
-
-            {modal.articles && modal.articles.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gap: '1rem'
+          {/* ОБНОВЛЕННЫЙ РАЗДЕЛ: Статьи персоны - только для основных персон */}
+          {!modal.isSpouse && (
+            <div>
+              <h4 style={{
+                fontSize: '1.125rem',
+                fontWeight: '600',
+                color: '#303133',
+                marginBottom: '1rem',
+                fontFamily: 'Montserrat, sans-serif',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
               }}>
-                {modal.articles.map(article => (
-                  <div
-                    key={article.id}
-                    style={{
-                      backgroundColor: '#ffffffc3',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '0.75rem',
-                      padding: '1rem',
-                      display: 'flex',
-                      gap: '1rem',
-                      alignItems: 'flex-start',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8f8f8';
-                      e.currentTarget.style.borderColor = '#c0a282';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#ffffffc3';
-                      e.currentTarget.style.borderColor = '#e0e0e0';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                    onClick={() => handleArticleClick(article.id)}
-                  >
-                    {/* Миниатюра */}
-                    <div style={{
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '0.5rem',
-                      overflow: 'hidden',
-                      flexShrink: 0
-                    }}>
-                      {article.photo ? (
-                        <img
-                          src={article.photo}
-                          alt={article.title}
-                          style={{
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Статьи ({modal.articles ? modal.articles.length : 0})
+              </h4>
+
+              {modal.articles && modal.articles.length > 0 ? (
+                <div style={{
+                  display: 'grid',
+                  gap: '1rem'
+                }}>
+                  {modal.articles.map(article => (
+                    <div
+                      key={article.id}
+                      style={{
+                        backgroundColor: '#ffffffc3',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '0.75rem',
+                        padding: '1rem',
+                        display: 'flex',
+                        gap: '1rem',
+                        alignItems: 'flex-start',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f8f8f8';
+                        e.currentTarget.style.borderColor = '#c0a282';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = '#ffffffc3';
+                        e.currentTarget.style.borderColor = '#e0e0e0';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                      onClick={() => handleArticleClick(article.id)}
+                    >
+                      {/* Миниатюра */}
+                      <div style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '0.5rem',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                      }}>
+                        {article.photo ? (
+                          <img
+                            src={article.photo}
+                            alt={article.title}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        ) : (
+                          <div style={{
                             width: '100%',
                             height: '100%',
-                            objectFit: 'cover'
-                          }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: '100%',
-                          height: '100%',
-                          backgroundColor: '#f0f0f0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '24px',
-                          color: '#c0a282'
-                        }}>
-                          📰
-                        </div>
-                      )}
-                    </div>
+                            backgroundColor: '#f0f0f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px',
+                            color: '#c0a282'
+                          }}>
+                            📰
+                          </div>
+                        )}
+                      </div>
 
-                    {/* Содержимое */}
-                    <div style={{ flex: 1 }}>
-                      <h5 style={{
-                        fontSize: '1rem',
-                        fontWeight: '600',
-                        color: '#303133',
-                        marginBottom: '0.25rem',
-                        fontFamily: 'Montserrat, sans-serif'
-                      }}>
-                        {article.title}
-                      </h5>
-                      
-                      {article.description && (
-                        <p style={{
-                          fontSize: '0.85rem',
-                          color: '#666',
-                          marginBottom: '0.5rem',
-                          fontFamily: 'Montserrat, sans-serif',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden'
+                      {/* Содержимое */}
+                      <div style={{ flex: 1 }}>
+                        <h5 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#303133',
+                          marginBottom: '0.25rem',
+                          fontFamily: 'Montserrat, sans-serif'
                         }}>
-                          {article.description}
-                        </p>
-                      )}
-                      
+                          {article.title}
+                        </h5>
+                        
+                        {article.description && (
+                          <p style={{
+                            fontSize: '0.85rem',
+                            color: '#666',
+                            marginBottom: '0.5rem',
+                            fontFamily: 'Montserrat, sans-serif',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}>
+                            {article.description}
+                          </p>
+                        )}
+                        
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#999',
+                          fontFamily: 'Montserrat, sans-serif'
+                        }}>
+                          {formatDate(article.createdAt)}
+                        </div>
+                      </div>
+
+                      {/* Стрелка */}
                       <div style={{
-                        fontSize: '0.75rem',
-                        color: '#999',
-                        fontFamily: 'Montserrat, sans-serif'
+                        color: '#c0a282',
+                        fontSize: '1.25rem',
+                        display: 'flex',
+                        alignItems: 'center'
                       }}>
-                        {formatDate(article.createdAt)}
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       </div>
                     </div>
-
-                    {/* Стрелка */}
-                    <div style={{
-                      color: '#c0a282',
-                      fontSize: '1.25rem',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{
-                backgroundColor: '#ffffffc3',
-                border: '2px dashed #e0e0e0',
-                borderRadius: '0.75rem',
-                padding: '2rem',
-                textAlign: 'center',
-                color: '#666'
-              }}>
-                <div style={{
-                  fontSize: '48px',
-                  marginBottom: '1rem',
-                  opacity: 0.5
-                }}>
-                  📝
+                  ))}
                 </div>
-                <p style={{
-                  fontSize: '0.9rem',
-                  fontFamily: 'Montserrat, sans-serif',
-                  margin: 0
+              ) : (
+                <div style={{
+                  backgroundColor: '#ffffffc3',
+                  border: '2px dashed #e0e0e0',
+                  borderRadius: '0.75rem',
+                  padding: '2rem',
+                  textAlign: 'center',
+                  color: '#666'
                 }}>
-                  У этой персоны пока нет статей
-                </p>
+                  <div style={{
+                    fontSize: '48px',
+                    marginBottom: '1rem',
+                    opacity: 0.5
+                  }}>
+                    📝
+                  </div>
+                  <p style={{
+                    fontSize: '0.9rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    margin: 0
+                  }}>
+                    У этой персоны пока нет статей
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* НОВОЕ: Информация для супругов */}
+          {modal.isSpouse && (
+            <div style={{
+              backgroundColor: '#ffffffc3',
+              border: '1px solid #e0e0e0',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              textAlign: 'center',
+              color: '#666'
+            }}>
+              <div style={{
+                fontSize: '24px',
+                marginBottom: '0.5rem',
+                opacity: 0.7
+              }}>
+                💑
               </div>
-            )}
-          </div>
+              <p style={{
+                fontSize: '0.9rem',
+                fontFamily: 'Montserrat, sans-serif',
+                margin: 0,
+                lineHeight: '1.5'
+              }}>
+                Статьи создаются только для основных персон семейного древа.<br/>
+                Супруги могут иметь свою информацию, но статьи привязываются к основной персоне.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -478,7 +509,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
 };
 
 // Остальные модальные окна остаются без изменений...
-// (EditPersonModal, AddSpouseModal, AddChildModal - их код не изменился)
+// (EditPersonModal, AddSpouseModal, AddChildModal)
 
 export const EditPersonModal = ({ 
   modal, 

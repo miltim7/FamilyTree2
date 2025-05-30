@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { TREE_CONSTANTS } from '../constants/treeConstants';
 import familyTreeAPI from '../services/api';
-import articlesAPI from '../services/articlesApi'; // НОВЫЙ ИМПОРТ
+import articlesAPI from '../services/articlesApi';
 
 export const useFamilyTree = () => {
   // Основное состояние
@@ -17,6 +17,10 @@ export const useFamilyTree = () => {
   const [hoveredPerson, setHoveredPerson] = useState(null);
   const [notification, setNotification] = useState(null);
 
+  // НОВОЕ СОСТОЯНИЕ: Последние статьи
+  const [recentArticles, setRecentArticles] = useState([]);
+  const [articlesLoading, setArticlesLoading] = useState(false);
+
   // Состояние для скрытых поколений
   const [hiddenGenerations, setHiddenGenerations] = useState({});
   
@@ -29,7 +33,7 @@ export const useFamilyTree = () => {
     person: null,
     isSpouse: false,
     personId: null,
-    articles: [] // НОВОЕ ПОЛЕ ДЛЯ СТАТЕЙ
+    articles: []
   });
 
   // НОВОЕ СОСТОЯНИЕ: Модальное окно редактирования
@@ -86,6 +90,7 @@ export const useFamilyTree = () => {
   // Загрузка данных при инициализации
   useEffect(() => {
     loadFamilyData();
+    loadRecentArticles(); // НОВОЕ: Загружаем статьи
   }, []);
 
   // Загрузка данных с сервера
@@ -115,6 +120,27 @@ export const useFamilyTree = () => {
     }
   }, []);
 
+  // НОВАЯ ФУНКЦИЯ: Загрузка последних статей
+  const loadRecentArticles = useCallback(async () => {
+    try {
+      setArticlesLoading(true);
+      const articles = await articlesAPI.getAllArticles();
+      
+      // Сортируем по дате создания (новые сначала) и берем первые 6
+      const sortedArticles = articles
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 6);
+      
+      setRecentArticles(sortedArticles);
+    } catch (error) {
+      console.error('Ошибка загрузки статей:', error);
+      // Не показываем ошибку пользователю, просто оставляем пустой массив
+      setRecentArticles([]);
+    } finally {
+      setArticlesLoading(false);
+    }
+  }, []);
+
   // НОВАЯ ФУНКЦИЯ: Загрузка статей персоны
   const loadPersonArticles = useCallback(async (personId) => {
     try {
@@ -126,10 +152,15 @@ export const useFamilyTree = () => {
     }
   }, []);
 
-  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Установка модального окна персоны с загрузкой статей
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ: Установка модального окна персоны с загрузкой статей
   const setPersonInfoModalWithArticles = useCallback(async (modalData) => {
     if (modalData.isOpen && modalData.personId) {
-      const articles = await loadPersonArticles(modalData.personId);
+      // ИСПРАВЛЕНИЕ: Загружаем статьи только для основных персон, НЕ для супругов
+      let articles = [];
+      if (!modalData.isSpouse) {
+        articles = await loadPersonArticles(modalData.personId);
+      }
+      
       setPersonInfoModal({
         ...modalData,
         articles: articles
@@ -462,6 +493,9 @@ export const useFamilyTree = () => {
       setFamilyData(result.data);
       showNotification('Ребенок успешно добавлен!', 'success');
       
+      // НОВОЕ: Обновляем статьи после добавления ребенка
+      loadRecentArticles();
+      
       setChildModal({
         isOpen: false,
         name: '',
@@ -482,7 +516,7 @@ export const useFamilyTree = () => {
     } finally {
       setChildModal(prev => ({ ...prev, loading: false }));
     }
-  }, [childModal, showNotification]);
+  }, [childModal, showNotification, loadRecentArticles]);
   
   const cancelModals = useCallback(() => {
     setSpouseModal({
@@ -555,7 +589,7 @@ export const useFamilyTree = () => {
     selectedBranch,
     setSelectedBranch,
     personInfoModal,
-    setPersonInfoModal: setPersonInfoModalWithArticles, // ОБНОВЛЕННАЯ ФУНКЦИЯ
+    setPersonInfoModal: setPersonInfoModalWithArticles,
     editModal,
     setEditModal,
     spouseModal,
@@ -565,8 +599,13 @@ export const useFamilyTree = () => {
     selectionMode,
     setSelectionMode,
     
+    // НОВЫЕ ПОЛЯ: Статьи
+    recentArticles,
+    articlesLoading,
+    
     // Функции
     loadFamilyData,
+    loadRecentArticles, // НОВАЯ ФУНКЦИЯ
     showNotification,
     toggleGeneration,
     resetHiddenGenerations,

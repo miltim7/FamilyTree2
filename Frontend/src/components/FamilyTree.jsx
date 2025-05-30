@@ -8,6 +8,7 @@ import { generateTreeLayout, getBoundaries } from '../utils/treeLayoutUtils';
 import { findPersonById, getBloodRelatives } from '../utils/familyUtils';
 import PersonNode from './PersonNode';
 import TreeConnections from './TreeConnections';
+import RecentArticles from './RecentArticles';
 import { PersonInfoModal, EditPersonModal, AddSpouseModal, AddChildModal } from './Modals';
 
 const FamilyTree = () => {
@@ -319,22 +320,7 @@ const FamilyTree = () => {
   // Основной рендер
   return (
     <div style={STYLES.container}>
-      <h1 style={STYLES.title}>
-        Семейное древо 
-        {!familyTreeState.isServerConnected && (
-          <span style={{
-            fontSize: '1rem',
-            color: '#303133',
-            backgroundColor: '#ffffffc3',
-            padding: '0.25rem 0.5rem',
-            borderRadius: '0.375rem',
-            border: '1px solid #c0a282',
-            fontFamily: 'Montserrat, sans-serif'
-          }}>
-            Офлайн
-          </span>
-        )}
-      </h1>
+      {/* УБРАЛИ ЗАГОЛОВОК "Семейное древо" */}
       
       {/* ИСПРАВЛЕННЫЙ БЛОК: Кнопки к границам и ниже */}
       <div style={{
@@ -605,24 +591,11 @@ const FamilyTree = () => {
         </svg>
       </div>
 
-      {/* Инструкция */}
-      <div style={STYLES.instructionPanel}>
-        <h3 style={STYLES.instructionTitle}>Инструкция</h3>
-        <ul style={STYLES.instructionItems}>
-          <li style={STYLES.instructionItem}>Нажмите "Добавить ребенка", чтобы добавить нового человека с выбором родителя</li>
-          <li style={STYLES.instructionItem}>Нажмите "Добавить супруга(-у)" для добавления пары к персоне</li>
-          <li style={STYLES.instructionItem}><strong>Кликните на карточку персоны</strong> - откроется модальное окно с подробной информацией</li>
-          <li style={STYLES.instructionItem}><strong>В модальном окне персоны</strong> доступны кнопки "Редактировать" и "Удалить"</li>
-          <li style={STYLES.instructionItem}><strong>При добавлении фото</strong> можно перетащить файл в область загрузки или выбрать через кнопку</li>
-          <li style={STYLES.instructionItem}><strong>Используйте навигационные кнопки</strong> справа для перемещения дерева стрелками и изменения масштаба</li>
-          <li style={STYLES.instructionItem}>Кликните на кнопку '-' на линии, чтобы скрыть поколение</li>
-          <li style={STYLES.instructionItem}>Кликните на кнопку '+' на пунктирной линии, чтобы показать скрытое поколение</li>
-          <li style={STYLES.instructionItem}><strong>Наведите на карточку персоны</strong> - появится иконка дерева в правом верхнем углу</li>
-          <li style={STYLES.instructionItem}><strong>Кликните на иконку дерева</strong> - отобразится только ветка этого родственника (предки, потомки, супруги)</li>
-          <li style={STYLES.instructionItem}>Используйте Ctrl + колесо мыши для масштабирования и перетаскивание для навигации</li>
-          <li style={STYLES.instructionItem}><strong>Все изменения автоматически сохраняются на сервере!</strong></li>
-        </ul>
-      </div>
+      {/* НОВЫЙ БЛОК: Последние статьи вместо инструкции */}
+      <RecentArticles 
+        articles={familyTreeState.recentArticles}
+        loading={familyTreeState.articlesLoading}
+      />
       
       {/* Модальные окна */}
       <PersonInfoModal 
