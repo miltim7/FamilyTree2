@@ -6,7 +6,7 @@ import { STYLES, NODE_STYLES } from '../constants/treeConstants';
 import PhotoUpload from './PhotoUpload';
 
 // Модальное окно с информацией о персоне
-export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
+export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthenticated }) => {
   const navigate = useNavigate();
   
   if (!modal.isOpen || !modal.person) return null;
@@ -91,40 +91,13 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
             {modal.isSpouse ? 'Информация о супруге(-е)' : 'Информация о персоне'}
           </h2>
 
-          {/* Кнопки действий */}
-          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => onEdit(modal.person, modal.isSpouse, modal.personId)}
-              style={{
-                backgroundColor: '#c0a282',
-                color: 'white',
-                border: 'none',
-                borderRadius: '0.5rem',
-                padding: '0.75rem 1rem',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s ease',
-                fontFamily: 'Montserrat, sans-serif'
-              }}
-              onMouseEnter={(e) => e.target.style.backgroundColor = '#a08966'}
-              onMouseLeave={(e) => e.target.style.backgroundColor = '#c0a282'}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Редактировать
-            </button>
-            
-            {canDelete && (
+          {/* ОБНОВЛЕННЫЕ кнопки действий - только для авторизованных */}
+          {isAuthenticated && (
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <button
-                onClick={() => onDelete(modal.personId, modal.isSpouse)}
+                onClick={() => onEdit(modal.person, modal.isSpouse, modal.personId)}
                 style={{
-                  backgroundColor: '#303133',
+                  backgroundColor: '#c0a282',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.5rem',
@@ -138,17 +111,69 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
                   transition: 'all 0.2s ease',
                   fontFamily: 'Montserrat, sans-serif'
                 }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#1a1a1a'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#303133'}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#a08966'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#c0a282'}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                Удалить
+                Редактировать
               </button>
-            )}
-          </div>
+              
+              {canDelete && (
+                <button
+                  onClick={() => onDelete(modal.personId, modal.isSpouse)}
+                  style={{
+                    backgroundColor: '#303133',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    padding: '0.75rem 1rem',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s ease',
+                    fontFamily: 'Montserrat, sans-serif'
+                  }}
+                  onMouseEnter={(e) => e.target.style.backgroundColor = '#1a1a1a'}
+                  onMouseLeave={(e) => e.target.style.backgroundColor = '#303133'}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Удалить
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* НОВОЕ: Сообщение для неавторизованных */}
+          {!isAuthenticated && (
+            <div style={{
+              backgroundColor: '#ffffffc3',
+              border: '1px solid #c0a282',
+              borderRadius: '0.5rem',
+              padding: '0.75rem',
+              fontSize: '0.875rem',
+              color: '#c0a282',
+              fontFamily: 'Montserrat, sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Для редактирования требуется авторизация
+            </div>
+          )}
         </div>
 
         {/* Контент */}
@@ -309,7 +334,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
             </div>
           )}
 
-          {/* ОБНОВЛЕННЫЙ РАЗДЕЛ: Статьи персоны - только для основных персон */}
+          {/* Статьи персоны - только для основных персон */}
           {!modal.isSpouse && (
             <div>
               <h4 style={{
@@ -474,7 +499,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
             </div>
           )}
 
-          {/* НОВОЕ: Информация для супругов */}
+          {/* Информация для супругов */}
           {modal.isSpouse && (
             <div style={{
               backgroundColor: '#ffffffc3',
@@ -508,9 +533,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete }) => {
   );
 };
 
-// Остальные модальные окна остаются без изменений...
-// (EditPersonModal, AddSpouseModal, AddChildModal)
-
+// Остальные модальные окна остаются без изменений (они вызываются только для авторизованных)
 export const EditPersonModal = ({ 
   modal, 
   onModalChange, 

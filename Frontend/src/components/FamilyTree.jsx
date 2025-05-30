@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { STYLES } from '../constants/treeConstants';
+import { useAuth } from '../contexts/AuthContext';
 import { useFamilyTree } from '../hooks/useFamilyTree';
 import { useTreeNavigation } from '../hooks/useTreeNavigation';
 import { generateTreeLayout, getBoundaries } from '../utils/treeLayoutUtils';
@@ -12,6 +13,9 @@ import RecentArticles from './RecentArticles';
 import { PersonInfoModal, EditPersonModal, AddSpouseModal, AddChildModal } from './Modals';
 
 const FamilyTree = () => {
+  // НОВОЕ: Получаем статус авторизации
+  const { isAuthenticated } = useAuth();
+  
   // Используем кастомные хуки
   const familyTreeState = useFamilyTree();
   
@@ -320,57 +324,74 @@ const FamilyTree = () => {
   // Основной рендер
   return (
     <div style={STYLES.container}>
-      {/* УБРАЛИ ЗАГОЛОВОК "Семейное древо" */}
       
-      {/* ИСПРАВЛЕННЫЙ БЛОК: Кнопки к границам и ниже */}
+      {/* ОБНОВЛЕННЫЙ БЛОК: Кнопки только для авторизованных пользователей */}
       <div style={{
         position: 'relative',
         width: '100%',
         marginBottom: '1rem',
         marginLeft: '30px',
-        height: '60px' // Увеличиваем высоту для размещения кнопок ниже
+        height: '60px'
       }}>
         
-        {/* ЛЕВАЯ ГРУППА: К САМОЙ ЛЕВОЙ ГРАНИЦЕ И НИЖЕ */}
+        {/* ЛЕВАЯ ГРУППА: Кнопки управления */}
         <div style={{
           position: 'absolute',
-          left: '-1rem', // Сдвигаем еще левее
-          top: '30px', // Опускаем кнопки ниже
+          left: '-1rem',
+          top: '30px',
           display: 'flex',
           gap: '0.5rem',
           flexWrap: 'wrap',
           alignItems: 'center'
         }}>
-          {/* Основные кнопки */}
-          <button
-            onClick={familyTreeState.openChildModal}
-            style={{ 
-              ...STYLES.button, 
-              ...STYLES.greenButton,
-              opacity: familyTreeState.loading ? 0.5 : 1,
-              fontSize: '0.875rem',
-              padding: '0.4rem 0.8rem'
-            }}
-            disabled={familyTreeState.loading}
-          >
-            Добавить ребенка
-          </button>
-          
-          <button
-            onClick={familyTreeState.openSpouseModal}
-            style={{ 
-              ...STYLES.button, 
-              ...STYLES.purpleButton,
-              opacity: familyTreeState.loading ? 0.5 : 1,
-              fontSize: '0.875rem',
-              padding: '0.4rem 0.8rem'
-            }}
-            disabled={familyTreeState.loading}
-          >
-            Добавить супруга(-у)
-          </button>
+          {/* CRUD кнопки - только для авторизованных */}
+          {isAuthenticated && (
+            <>
+              <button
+                onClick={familyTreeState.openChildModal}
+                style={{ 
+                  ...STYLES.button, 
+                  ...STYLES.greenButton,
+                  opacity: familyTreeState.loading ? 0.5 : 1,
+                  fontSize: '0.875rem',
+                  padding: '0.4rem 0.8rem'
+                }}
+                disabled={familyTreeState.loading}
+              >
+                Добавить ребенка
+              </button>
+              
+              <button
+                onClick={familyTreeState.openSpouseModal}
+                style={{ 
+                  ...STYLES.button, 
+                  ...STYLES.purpleButton,
+                  opacity: familyTreeState.loading ? 0.5 : 1,
+                  fontSize: '0.875rem',
+                  padding: '0.4rem 0.8rem'
+                }}
+                disabled={familyTreeState.loading}
+              >
+                Добавить супруга(-у)
+              </button>
 
-          {/* Дополнительные кнопки */}
+              <button
+                onClick={familyTreeState.loadFamilyData}
+                style={{ 
+                  ...STYLES.button, 
+                  ...STYLES.grayButton,
+                  opacity: familyTreeState.loading ? 0.5 : 1,
+                  fontSize: '0.875rem',
+                  padding: '0.4rem 0.8rem'
+                }}
+                disabled={familyTreeState.loading}
+              >
+                {familyTreeState.loading ? 'Загрузка...' : 'Обновить'}
+              </button>
+            </>
+          )}
+
+          {/* Навигационные кнопки - доступны всем */}
           <button
             onClick={navigationState.centerTree}
             style={{ 
@@ -383,21 +404,7 @@ const FamilyTree = () => {
             Центрировать
           </button>
           
-          <button
-            onClick={familyTreeState.loadFamilyData}
-            style={{ 
-              ...STYLES.button, 
-              ...STYLES.grayButton,
-              opacity: familyTreeState.loading ? 0.5 : 1,
-              fontSize: '0.875rem',
-              padding: '0.4rem 0.8rem'
-            }}
-            disabled={familyTreeState.loading}
-          >
-            {familyTreeState.loading ? 'Загрузка...' : 'Обновить'}
-          </button>
-          
-          {/* Условные кнопки */}
+          {/* Условные кнопки - доступны всем */}
           {familyTreeState.selectedBranch && (
             <button
               onClick={() => familyTreeState.setSelectedBranch(null)}
@@ -427,19 +434,16 @@ const FamilyTree = () => {
           )}
         </div>
 
-        {/* ПРАВАЯ ГРУППА: К САМОЙ ПРАВОЙ ГРАНИЦЕ И НИЖЕ */}
+        {/* ПРАВАЯ ГРУППА: Навигационные кнопки - доступны всем */}
         <div style={{
           position: 'absolute',
-          right: '20px', // Сдвигаем еще правее
-          top: '30px', // Опускаем кнопки ниже
+          right: '20px',
+          top: '30px',
           display: 'flex',
           gap: '0.25rem',
           alignItems: 'center'
         }}>
           
-          {/* Навигационные кнопки в ряд */}
-          
-          {/* 1. Стрелка вверх */}
           <button
             onClick={navigationState.moveUp}
             style={{
@@ -459,7 +463,6 @@ const FamilyTree = () => {
             </svg>
           </button>
           
-          {/* 2. Стрелка влево */}
           <button
             onClick={navigationState.moveLeft}
             style={{
@@ -479,7 +482,6 @@ const FamilyTree = () => {
             </svg>
           </button>
           
-          {/* 3. Стрелка вниз */}
           <button
             onClick={navigationState.moveDown}
             style={{
@@ -499,7 +501,6 @@ const FamilyTree = () => {
             </svg>
           </button>
           
-          {/* 4. Стрелка вправо */}
           <button
             onClick={navigationState.moveRight}
             style={{
@@ -519,7 +520,6 @@ const FamilyTree = () => {
             </svg>
           </button>
           
-          {/* 5. Кнопка зума + */}
           <button
             onClick={navigationState.zoomIn}
             style={{
@@ -539,7 +539,6 @@ const FamilyTree = () => {
             </svg>
           </button>
           
-          {/* 6. Кнопка зума - */}
           <button
             onClick={navigationState.zoomOut}
             style={{
@@ -591,45 +590,61 @@ const FamilyTree = () => {
         </svg>
       </div>
 
-      {/* НОВЫЙ БЛОК: Последние статьи вместо инструкции */}
+      {/* Последние статьи */}
       <RecentArticles 
         articles={familyTreeState.recentArticles}
         loading={familyTreeState.articlesLoading}
       />
       
-      {/* Модальные окна */}
-      <PersonInfoModal 
-        modal={familyTreeState.personInfoModal}
-        onClose={familyTreeState.cancelModals}
-        onEdit={familyTreeState.openEditModal}
-        onDelete={familyTreeState.deletePerson}
-      />
+      {/* ОБНОВЛЕННЫЕ модальные окна - только для авторизованных */}
+      {isAuthenticated && (
+        <>
+          <PersonInfoModal 
+            modal={familyTreeState.personInfoModal}
+            onClose={familyTreeState.cancelModals}
+            onEdit={familyTreeState.openEditModal}
+            onDelete={familyTreeState.deletePerson}
+            isAuthenticated={isAuthenticated}
+          />
 
-      <EditPersonModal 
-        modal={familyTreeState.editModal}
-        onModalChange={(updates) => familyTreeState.setEditModal(prev => ({ ...prev, ...updates }))}
-        onClose={familyTreeState.cancelModals}
-        onConfirm={familyTreeState.confirmEditPerson}
-      />
+          <EditPersonModal 
+            modal={familyTreeState.editModal}
+            onModalChange={(updates) => familyTreeState.setEditModal(prev => ({ ...prev, ...updates }))}
+            onClose={familyTreeState.cancelModals}
+            onConfirm={familyTreeState.confirmEditPerson}
+          />
+          
+          <AddSpouseModal 
+            modal={familyTreeState.spouseModal}
+            onModalChange={(updates) => familyTreeState.setSpouseModal(prev => ({ ...prev, ...updates }))}
+            onClose={familyTreeState.cancelModals}
+            onStartSelection={familyTreeState.startSpousePersonSelection}
+            onConfirm={familyTreeState.confirmAddSpouse}
+          />
+          
+          <AddChildModal 
+            modal={familyTreeState.childModal}
+            onModalChange={(updates) => familyTreeState.setChildModal(prev => ({ ...prev, ...updates }))}
+            onClose={familyTreeState.cancelModals}
+            onStartSelection={familyTreeState.startParentSelection}
+            onConfirm={familyTreeState.confirmAddChild}
+          />
+        </>
+      )}
+
+      {/* Модальное окно персоны для неавторизованных (только просмотр) */}
+      {!isAuthenticated && (
+        <PersonInfoModal 
+          modal={familyTreeState.personInfoModal}
+          onClose={familyTreeState.cancelModals}
+          onEdit={() => {}}
+          onDelete={() => {}}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
       
-      <AddSpouseModal 
-        modal={familyTreeState.spouseModal}
-        onModalChange={(updates) => familyTreeState.setSpouseModal(prev => ({ ...prev, ...updates }))}
-        onClose={familyTreeState.cancelModals}
-        onStartSelection={familyTreeState.startSpousePersonSelection}
-        onConfirm={familyTreeState.confirmAddSpouse}
-      />
-      
-      <AddChildModal 
-        modal={familyTreeState.childModal}
-        onModalChange={(updates) => familyTreeState.setChildModal(prev => ({ ...prev, ...updates }))}
-        onClose={familyTreeState.cancelModals}
-        onStartSelection={familyTreeState.startParentSelection}
-        onConfirm={familyTreeState.confirmAddChild}
-      />
-      
-      {/* Уведомление о режиме выбора */}
-      {familyTreeState.selectionMode && (
+      {/* Уведомление о режиме выбора - только для авторизованных */}
+      {isAuthenticated && familyTreeState.selectionMode && (
         <div style={STYLES.selectionModeNotice}>
           <div style={STYLES.selectionModeTitle}>
             {familyTreeState.selectionMode === 'parent' ? 'Режим выбора родителя' : 'Режим выбора персоны для супруга'}

@@ -1,6 +1,7 @@
 // Frontend\src\components\ArticlesPage.jsx
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import articlesAPI from '../services/articlesApi';
 import familyTreeAPI from '../services/api';
 import { STYLES } from '../constants/treeConstants';
@@ -8,6 +9,9 @@ import ArticleCard from './ArticleCard';
 import CreateArticleModal from './CreateArticleModal';
 
 const ArticlesPage = () => {
+  // НОВОЕ: Получаем статус авторизации
+  const { isAuthenticated } = useAuth();
+  
   const [articles, setArticles] = useState([]);
   const [familyData, setFamilyData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -153,21 +157,24 @@ const ArticlesPage = () => {
       }}>
         <h1 style={STYLES.title}>Статьи семейного древа</h1>
         
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          style={{
-            ...STYLES.button,
-            ...STYLES.greenButton,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Создать статью
-        </button>
+        {/* ОБНОВЛЕННАЯ кнопка создания - только для авторизованных */}
+        {isAuthenticated && (
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            style={{
+              ...STYLES.button,
+              ...STYLES.greenButton,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Создать статью
+          </button>
+        )}
       </div>
 
       {articles.length === 0 ? (
@@ -194,17 +201,48 @@ const ArticlesPage = () => {
             marginBottom: '1.5rem',
             fontFamily: 'Montserrat, sans-serif'
           }}>
-            Создайте первую статью для сохранения истории вашей семьи
+            {isAuthenticated 
+              ? 'Создайте первую статью для сохранения истории вашей семьи'
+              : 'Для создания статей требуется авторизация'
+            }
           </p>
-          <button
-            onClick={() => setCreateModalOpen(true)}
-            style={{
-              ...STYLES.button,
-              ...STYLES.greenButton
-            }}
-          >
-            Создать первую статью
-          </button>
+          
+          {/* ОБНОВЛЕННАЯ кнопка - только для авторизованных */}
+          {isAuthenticated && (
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              style={{
+                ...STYLES.button,
+                ...STYLES.greenButton
+              }}
+            >
+              Создать первую статью
+            </button>
+          )}
+
+          {/* НОВОЕ: Сообщение для неавторизованных */}
+          {!isAuthenticated && (
+            <div style={{
+              backgroundColor: '#ffffffc3',
+              border: '1px solid #c0a282',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              fontSize: '0.875rem',
+              color: '#c0a282',
+              fontFamily: 'Montserrat, sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+              Войдите в админ панель для создания статей
+            </div>
+          )}
         </div>
       ) : (
         <div style={{
@@ -223,8 +261,8 @@ const ArticlesPage = () => {
         </div>
       )}
 
-      {/* Модальное окно создания статьи */}
-      {createModalOpen && (
+      {/* ОБНОВЛЕННОЕ модальное окно создания статьи - только для авторизованных */}
+      {isAuthenticated && createModalOpen && (
         <CreateArticleModal
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}

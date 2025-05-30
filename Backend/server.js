@@ -11,6 +11,9 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// НОВАЯ КОНСТАНТА: Пароль администратора
+const ADMIN_PASSWORD = 'admin123';
+
 // Пути к файлам
 const DATA_FILE = path.join(__dirname, 'data', 'family-data.json');
 const ARTICLES_FILE = path.join(__dirname, 'data', 'articles.json');
@@ -22,7 +25,7 @@ app.use(cors({
     origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
     credentials: true
 }));
-app.use(express.json({ limit: '50mb' })); // Увеличиваем лимит для фотографий
+app.use(express.json({ limit: '50mb' }));
 app.use(morgan('combined'));
 
 // Инициализация данных при старте сервера
@@ -86,7 +89,6 @@ const writeFamilyData = async (data) => {
     }
 };
 
-// НОВЫЕ УТИЛИТЫ: Работа со статьями
 const readArticlesData = async () => {
     try {
         const data = await fs.readJSON(ARTICLES_FILE);
@@ -138,10 +140,9 @@ const removePersonById = (root, targetId) => {
         root.children = root.children.filter(child => child && child.id !== targetId);
         
         if (root.children.length < initialLength) {
-            return true; // Персона была удалена
+            return true;
         }
         
-        // Рекурсивно ищем в детях
         for (const child of root.children) {
             if (child && removePersonById(child, targetId)) {
                 return true;
@@ -162,6 +163,40 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
+});
+
+// НОВЫЙ ENDPOINT: Авторизация администратора
+app.post('/api/auth/login', (req, res) => {
+    try {
+        const { password } = req.body;
+        
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Пароль не указан'
+            });
+        }
+        
+        if (password === ADMIN_PASSWORD) {
+            res.json({
+                success: true,
+                message: 'Авторизация успешна',
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            res.status(401).json({
+                success: false,
+                message: 'Неверный пароль'
+            });
+        }
+        
+    } catch (error) {
+        console.error('Ошибка авторизации:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при авторизации'
+        });
+    }
 });
 
 // Получить все данные семьи
@@ -329,7 +364,6 @@ app.put('/api/family/person/:personId', async (req, res) => {
             });
         }
         
-        // Обновляем данные персоны
         targetPerson.name = personData.name.trim();
         targetPerson.gender = personData.gender || targetPerson.gender;
         targetPerson.photo = personData.photo || null;
@@ -371,7 +405,6 @@ app.delete('/api/family/person/:personId', async (req, res) => {
         const familyData = await readFamilyData();
         
         if (isSpouse) {
-            // Удаляем супруга
             const person = findPersonById(familyData, personId);
             if (!person || !person.spouse) {
                 return res.status(404).json({
@@ -382,7 +415,6 @@ app.delete('/api/family/person/:personId', async (req, res) => {
             
             person.spouse = null;
         } else {
-            // Проверяем, что это не корневая персона
             if (familyData.id === personId) {
                 return res.status(400).json({
                     success: false,
@@ -390,7 +422,6 @@ app.delete('/api/family/person/:personId', async (req, res) => {
                 });
             }
             
-            // Удаляем персону из дерева
             const removed = removePersonById(familyData, personId);
             if (!removed) {
                 return res.status(404).json({
@@ -417,7 +448,7 @@ app.delete('/api/family/person/:personId', async (req, res) => {
     }
 });
 
-// НОВЫЕ API ROUTES ДЛЯ СТАТЕЙ
+// СТАТЬИ API ROUTES
 
 // Получить все статьи
 app.get('/api/articles', async (req, res) => {
@@ -495,7 +526,6 @@ app.post('/api/articles', async (req, res) => {
             });
         }
         
-        // Проверяем, что персона существует
         const familyData = await readFamilyData();
         const person = findPersonById(familyData, personId);
         
@@ -511,7 +541,7 @@ app.post('/api/articles', async (req, res) => {
         const newArticle = {
             id: uuidv4(),
             personId: personId,
-            personName: person.name, // Сохраняем имя для удобства
+            personName: person.name,
             title: title.trim(),
             photo: photo || null,
             description: description || '',
@@ -561,7 +591,6 @@ app.put('/api/articles/:articleId', async (req, res) => {
             });
         }
         
-        // Обновляем статью
         articles[articleIndex] = {
             ...articles[articleIndex],
             title: title.trim(),
@@ -651,9 +680,11 @@ const startServer = async () => {
             console.log(`Порт: ${PORT}`);
             console.log(`API: http://localhost:${PORT}/api/family`);
             console.log(`API статей: http://localhost:${PORT}/api/articles`);
+            console.log(`API авторизации: http://localhost:${PORT}/api/auth`);
             console.log(`Данные: ${DATA_FILE}`);
             console.log(`Статьи: ${ARTICLES_FILE}`);
             console.log(`Резервные копии: ${BACKUP_DIR}`);
+            console.log(`АДМИН ПАРОЛЬ: ${ADMIN_PASSWORD}`);
             console.log('====================================');
         });
         

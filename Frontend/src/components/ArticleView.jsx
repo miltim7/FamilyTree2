@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import articlesAPI from '../services/articlesApi';
 import familyTreeAPI from '../services/api';
 import { STYLES } from '../constants/treeConstants';
@@ -9,6 +10,9 @@ import { findPersonById } from '../utils/familyUtils';
 import PhotoUpload from './PhotoUpload';
 
 const ArticleView = () => {
+  // НОВОЕ: Получаем статус авторизации
+  const { isAuthenticated } = useAuth();
+  
   const { articleId } = useParams();
   const navigate = useNavigate();
   
@@ -355,9 +359,9 @@ const ArticleView = () => {
             )}
           </div>
 
-          {/* Кнопки действий */}
+          {/* ОБНОВЛЕННЫЕ кнопки действий - только для авторизованных */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-            {!isEditing ? (
+            {isAuthenticated && !isEditing ? (
               <>
                 <button
                   onClick={handleEdit}
@@ -413,7 +417,7 @@ const ArticleView = () => {
                   Удалить
                 </button>
               </>
-            ) : (
+            ) : isAuthenticated && isEditing ? (
               <>
                 <button
                   onClick={handleSave}
@@ -472,6 +476,29 @@ const ArticleView = () => {
                   Отмена
                 </button>
               </>
+            ) : null}
+
+            {/* НОВОЕ: Сообщение для неавторизованных */}
+            {!isAuthenticated && (
+              <div style={{
+                backgroundColor: '#ffffffc3',
+                border: '1px solid #c0a282',
+                borderRadius: '0.5rem',
+                padding: '0.75rem 1rem',
+                fontSize: '0.875rem',
+                color: '#c0a282',
+                fontFamily: 'Montserrat, sans-serif',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                Для редактирования требуется авторизация
+              </div>
             )}
           </div>
         </div>
