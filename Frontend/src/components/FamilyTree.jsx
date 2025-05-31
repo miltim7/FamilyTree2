@@ -50,18 +50,12 @@ const FamilyTree = () => {
   const shouldShowNode = (nodeId) => {
     if (!familyTreeState.selectedBranch) return true;
 
-    const isSpouse = nodeId.includes('-spouse');
-    const normalizedId = nodeId.replace(/-spouse$/, '');
     const bloodRelatives = getBloodRelatives(familyTreeState.familyData, familyTreeState.selectedBranch);
 
-    if (bloodRelatives.has(normalizedId)) return true;
-
-    if (isSpouse) {
-      return bloodRelatives.has(normalizedId);
-    }
-
-    return false;
+    // ИСПРАВЛЕНО: Проверяем напрямую по nodeId (включая -spouse суффикс)
+    return bloodRelatives.has(nodeId);
   };
+
 
   // Обработка клика по узлу
   const handleNodeClick = (e, nodeId, nodeType, nodeName) => {

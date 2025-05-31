@@ -38,10 +38,10 @@ const PersonNode = ({
     console.error('Ошибка при поиске данных персоны:', error);
   }
   
-  // Определяем стили узла - ВСЕ УЗЛЫ ОДНОГО ЦВЕТА
-  let nodeStyle = { ...NODE_STYLES.maleNode }; // Используем единый стиль
+  // Определяем стили узла
+  let nodeStyle = { ...NODE_STYLES.maleNode };
   
-  // Применяем фильтрацию по ветке ко всем элементам
+  // ИСПРАВЛЕННАЯ фильтрация - проверяем видимость узла
   const isFiltered = !shouldShow;
   if (isFiltered) {
     nodeStyle = { ...nodeStyle, ...NODE_STYLES.filteredNode };
@@ -51,9 +51,11 @@ const PersonNode = ({
     nodeStyle.stroke = NODE_STYLES.selectedMaleNode.stroke;
   }
   
+  // ИСПРАВЛЕНО: правильная проверка скрытых поколений
   if (node.hasHiddenGeneration) {
     nodeStyle.stroke = NODE_STYLES.nodeWithHiddenGen.stroke;
     nodeStyle.strokeWidth = NODE_STYLES.nodeWithHiddenGen.strokeWidth;
+    nodeStyle.strokeDasharray = NODE_STYLES.nodeWithHiddenGen.strokeDasharray;
   }
   
   if (selectionMode === 'parent' && hoveredPerson === nodeId) {
@@ -98,7 +100,7 @@ const PersonNode = ({
   const normalizedId = nodeId.replace(/-spouse$/, '');
   const isBranchSelected = selectedBranch === normalizedId;
   
-  // Стили для фильтрации всех элементов
+  // Стили для фильтрации
   const elementOpacity = isFiltered ? 0.3 : 1;
   const imageStyle = {
     cursor: cursorStyle,
@@ -132,6 +134,7 @@ const PersonNode = ({
         fill={nodeStyle.fill}
         stroke={nodeStyle.stroke}
         strokeWidth={nodeStyle.strokeWidth}
+        strokeDasharray={nodeStyle.strokeDasharray || 'none'}
         style={{ 
           cursor: cursorStyle,
           transition: 'fill 0.25s ease, stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease',
@@ -140,7 +143,7 @@ const PersonNode = ({
         onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
       />
       
-      {/* Фотография - заполняет всю область */}
+      {/* Фотография */}
       {node.photo ? (
         <image
           x={(node.width - 60) / 2}
@@ -178,24 +181,23 @@ const PersonNode = ({
               fontFamily: 'Montserrat, sans-serif'
             }}
           >
-            USER
+            👤
           </text>
         </g>
       )}
       
-      {/* ОБНОВЛЕННАЯ иконка ветки родственника - только для основных персон (не супругов) */}
+      {/* ИКОНКА ВЕТКИ РОДСТВЕННИКА - только для основных персон */}
       {!isSpouse && (
         <g
           style={{
             ...NODE_STYLES.branchIcon,
-            // НОВАЯ ЛОГИКА: показываем иконку если:
-            // 1. При hover и не отфильтрована ИЛИ
-            // 2. Ветка активна (независимо от фильтрации)
+            // Показываем иконку при hover (если не отфильтрована) ИЛИ если ветка активна
             opacity: (isHovered && !isFiltered) || isBranchSelected ? 1 : 0,
             transition: 'opacity 0.3s ease'
           }}
           onClick={(e) => {
             e.stopPropagation();
+            // ИСПРАВЛЕНО: используем правильный ID для переключения ветки
             onBranchToggle(normalizedId);
           }}
         >
@@ -248,7 +250,7 @@ const PersonNode = ({
         </g>
       )}
       
-      {/* Текст имени - с применением фильтрации */}
+      {/* Текст имени */}
       <text
         x={node.width / 2}
         y={85}
@@ -278,7 +280,7 @@ const PersonNode = ({
         </text>
       )}
       
-      {/* Текст годов жизни - с применением фильтрации */}
+      {/* Текст годов жизни */}
       <text
         x={node.width / 2}
         y={node.name && node.name.length > 25 ? 115 : 100}

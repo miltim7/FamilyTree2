@@ -2,12 +2,12 @@
 
 // Константы для размеров и отступов
 export const TREE_CONSTANTS = {
-  PERSON_WIDTH: 250, 
+  PERSON_WIDTH: 250,
   PERSON_HEIGHT: 140,
   VERTICAL_GAP: 180, // УВЕЛИЧЕНО: было 140, стало 180
   HORIZONTAL_GAP: 100, // УВЕЛИЧЕНО: было 60, стало 100
   BRANCH_GAP: 200, // УВЕЛИЧЕНО: было 120, стало 200
-  MIN_SCALE: 0.3,
+  MIN_SCALE: 0.1,
   MAX_SCALE: 2,
   ZOOM_FACTOR: 1.1,
   DRAG_THRESHOLD: 5,
@@ -344,9 +344,9 @@ export const NODE_STYLES = {
     transition: 'opacity 0.5s, stroke-dasharray 0.5s',
   },
   nodeWithHiddenGen: {
-    stroke: '#303133',
-    strokeDasharray: '0',
-    strokeWidth: 3,
+    stroke: '#c0a282',      // ← ИСПРАВЛЕНО: тот же цвет что и обычные
+    strokeDasharray: '5,5', // ← НОВОЕ: пунктирная линия для индикации
+    strokeWidth: 2,         // ← ИСПРАВЛЕНО: такая же толщина
     transition: 'stroke 0.3s, stroke-width 0.3s',
   },
   // Стили для кнопок на линиях
@@ -363,7 +363,7 @@ export const NODE_STYLES = {
   },
   lineToggleButtonIcon: {
     stroke: '#c0a282',
-    strokeWidth: 2.5,
+    strokeWidth: 2,
     strokeLinecap: 'round',
   },
   // Стили для индикации скрытого поколения

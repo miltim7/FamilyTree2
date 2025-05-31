@@ -160,62 +160,91 @@ export const generateTreeLayout = (familyData, hiddenGenerations = {}) => {
       let currentX = centerX - totalChildrenWidth / 2;
       
       // Рисуем соединения от родителей
-      if (hasSpouse) {
-        const person1X = personX + PERSON_WIDTH / 2;
-        const person2X = spouseNode.x + PERSON_WIDTH / 2;
-        const midY = bottomY + VERTICAL_GAP / 4;
-        
-        layout.connections.push({
-          type: 'parent-junction',
-          x1: person1X,
-          y1: bottomY,
-          x2: person1X,
-          y2: midY,
-          nodeId: node.id
-        });
-        
-        layout.connections.push({
-          type: 'parent-junction',
-          x1: person2X,
-          y1: bottomY,
-          x2: person2X,
-          y2: midY,
-          nodeId: node.id
-        });
-        
-        layout.connections.push({
-          type: 'parent-junction',
-          x1: person1X,
-          y1: midY,
-          x2: person2X,
-          y2: midY,
-          nodeId: node.id
-        });
-        
-        layout.connections.push({
-          type: 'parent-junction',
-          x1: centerX,
-          y1: midY,
-          x2: centerX,
-          y2: junctionY,
-          hasToggleButton: true,
-          toggleButtonX: centerX,
-          toggleButtonY: midY + (junctionY - midY) / 2,
-          nodeId: node.id
-        });
-      } else {
-        layout.connections.push({
-          type: 'parent-junction',
-          x1: centerX,
-          y1: bottomY,
-          x2: centerX,
-          y2: junctionY,
-          hasToggleButton: true,
-          toggleButtonX: centerX,
-          toggleButtonY: bottomY + (junctionY - bottomY) / 2,
-          nodeId: node.id
-        });
-      }
+      // ИСПРАВЛЕННЫЕ соединения без дублирования
+if (hasSpouse) {
+  const person1X = personX + PERSON_WIDTH / 2;
+  const person2X = spouseNode.x + PERSON_WIDTH / 2;
+  const midY = bottomY + VERTICAL_GAP / 4;
+  
+  // Уникальные соединения с проверкой
+  const connections = [
+    {
+      type: 'parent-junction',
+      x1: person1X,
+      y1: bottomY,
+      x2: person1X,
+      y2: midY,
+      nodeId: node.id
+    },
+    {
+      type: 'parent-junction', 
+      x1: person2X,
+      y1: bottomY,
+      x2: person2X,
+      y2: midY,
+      nodeId: node.id
+    },
+    {
+      type: 'parent-junction',
+      x1: person1X,
+      y1: midY,
+      x2: person2X,
+      y2: midY,
+      nodeId: node.id
+    },
+    {
+      type: 'parent-junction',
+      x1: centerX,
+      y1: midY,
+      x2: centerX,
+      y2: junctionY,
+      hasToggleButton: true,
+      toggleButtonX: centerX,
+      toggleButtonY: midY + (junctionY - midY) / 2,
+      nodeId: node.id
+    }
+  ];
+  
+  // Добавляем только уникальные соединения
+  connections.forEach(conn => {
+    const isDuplicate = layout.connections.some(existing => 
+      existing.x1 === conn.x1 && 
+      existing.y1 === conn.y1 && 
+      existing.x2 === conn.x2 && 
+      existing.y2 === conn.y2
+    );
+    
+    if (!isDuplicate) {
+      layout.connections.push(conn);
+    }
+  });
+  
+} else {
+  // Для одного родителя - простое соединение
+  const singleConnection = {
+    type: 'parent-junction',
+    x1: centerX,
+    y1: bottomY,
+    x2: centerX,
+    y2: junctionY,
+    hasToggleButton: true,
+    toggleButtonX: centerX,
+    toggleButtonY: bottomY + (junctionY - bottomY) / 2,
+    nodeId: node.id
+  };
+  
+  // Проверяем на дублирование
+  const isDuplicate = layout.connections.some(existing => 
+    existing.x1 === singleConnection.x1 && 
+    existing.y1 === singleConnection.y1 && 
+    existing.x2 === singleConnection.x2 && 
+    existing.y2 === singleConnection.y2
+  );
+  
+  if (!isDuplicate) {
+    layout.connections.push(singleConnection);
+  }
+}
       
       // Размещаем детей
       for (let i = 0; i < node.children.length; i++) {

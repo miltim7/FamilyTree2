@@ -7,27 +7,27 @@ const { MIN_SCALE, MAX_SCALE, ZOOM_FACTOR, DRAG_THRESHOLD } = TREE_CONSTANTS;
 
 export const useTreeNavigation = (treeLayout, boundaries) => {
   // Состояние для масштабирования и перемещения
-  const [scale, setScale] = useState(0.8);
+  const [scale, setScale] = useState(0.3); // Максимальное отдаление при загрузке
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragDistance, setDragDistance] = useState(0);
-  
+
   // НОВОЕ: Состояние для touch событий
   const [isTouch, setIsTouch] = useState(false);
   const [lastTouchDistance, setLastTouchDistance] = useState(0);
   const [lastTouchCenter, setLastTouchCenter] = useState({ x: 0, y: 0 });
   const [lastTap, setLastTap] = useState(0);
-  
+
   // Ссылка на SVG элемент
   const svgRef = useRef(null);
-  
+
   // Состояние для предотвращения смещения при скрытии/показе
   const [lockPosition, setLockPosition] = useState(false);
-  
+
   // Флаг для отслеживания, было ли древо перемещено пользователем
   const [userMovedTree, setUserMovedTree] = useState(false);
-  
+
   // Ref для доступа к актуальным данным в обработчиках
   const stateRef = useRef({
     position,
@@ -69,21 +69,37 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
     };
   };
 
-  // Функция центрирования дерева
+  // УЛУЧШЕННАЯ функция центрирования с учетом масштаба
+  // НОВАЯ функция центрирования с фокусом на корневых предков
   const centerTree = useCallback(() => {
     if (svgRef.current && treeLayout?.nodes?.length > 0) {
       const svgRect = svgRef.current.getBoundingClientRect();
       const centerX = svgRect.width / 2;
-      const centerY = svgRect.height / 2;
-      
+
+      // Находим корневые узлы (самое первое поколение - level 0)
+      const rootNodes = treeLayout.nodes.filter(node => node.level === 0);
+
+      if (rootNodes.length === 0) return;
+
+      // Находим центр корневых узлов
+      let minRootX = Math.min(...rootNodes.map(node => node.x));
+      let maxRootX = Math.max(...rootNodes.map(node => node.x + node.width));
+      let rootCenterX = (minRootX + maxRootX) / 2;
+
+      // Находим Y позицию корневых узлов (они все на одном уровне)
+      let rootY = rootNodes[0].y;
+
+      // Отступ сверху (чтобы корневые предки были не прямо у края, а с отступом)
+      const topPadding = 100;
+
       setPosition({
-        x: centerX - (boundaries.width / 2) * scale,
-        y: centerY - (boundaries.height / 2) * scale
+        x: centerX - rootCenterX * scale,
+        y: topPadding - rootY * scale  // Корневые предки будут в верхней части с отступом
       });
-      
+
       setUserMovedTree(false);
     }
-  }, [treeLayout, boundaries, scale]);
+  }, [treeLayout, scale]);
 
   // Функции программного управления навигацией
   const moveStep = 100;
@@ -110,18 +126,18 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
 
   const zoomIn = useCallback(() => {
     if (!svgRef.current) return;
-    
+
     const newScale = Math.min(scale * ZOOM_FACTOR, MAX_SCALE);
     if (newScale === scale) return;
-    
+
     const rect = svgRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
+
     const factor = newScale / scale;
     const newX = centerX - factor * (centerX - position.x);
     const newY = centerY - factor * (centerY - position.y);
-    
+
     setScale(newScale);
     setPosition({ x: newX, y: newY });
     setUserMovedTree(true);
@@ -129,18 +145,18 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
 
   const zoomOut = useCallback(() => {
     if (!svgRef.current) return;
-    
+
     const newScale = Math.max(scale / ZOOM_FACTOR, MIN_SCALE);
     if (newScale === scale) return;
-    
+
     const rect = svgRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
+
     const factor = newScale / scale;
     const newX = centerX - factor * (centerX - position.x);
     const newY = centerY - factor * (centerY - position.y);
-    
+
     setScale(newScale);
     setPosition({ x: newX, y: newY });
     setUserMovedTree(true);
@@ -149,56 +165,59 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
   // Центрирование при изменении макета
   useEffect(() => {
     if (treeLayout && !lockPosition && !userMovedTree) {
-      centerTree();
+      // Небольшая задержка для корректного расчета размеров
+      setTimeout(() => {
+        centerTree();
+      }, 100);
     }
   }, [treeLayout, lockPosition, userMovedTree, centerTree]);
 
   // МЫШЬ: Начало перетаскивания
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
-    
+
     if (e.button === 0) {
       setIsTouch(false);
       setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
       setDragDistance(0);
-      
+
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     }
   }, []);
-  
+
   // МЫШЬ: Перетаскивание
   const handleMouseMove = useCallback((e) => {
     const state = stateRef.current;
     if (!state.isDragging) return;
-    
+
     const dx = e.clientX - state.dragStart.x;
     const dy = e.clientY - state.dragStart.y;
-    
+
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
+
     setPosition({
       x: state.position.x + dx,
       y: state.position.y + dy
     });
-    
+
     setDragStart({ x: e.clientX, y: e.clientY });
     setDragDistance(state.dragDistance + distance);
   }, []);
-  
+
   // МЫШЬ: Окончание перетаскивания
   const handleMouseUp = useCallback((e) => {
     const state = stateRef.current;
     const wasDragging = state.dragDistance > DRAG_THRESHOLD;
-    
+
     if (wasDragging) {
       setUserMovedTree(true);
     }
-    
+
     setIsDragging(false);
     setDragDistance(0);
-    
+
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
   }, [handleMouseMove]);
@@ -209,15 +228,15 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
   const handleTouchStart = useCallback((e) => {
     e.preventDefault();
     setIsTouch(true);
-    
+
     const touches = e.touches;
-    
+
     if (touches.length === 1) {
       // Одно касание - начало перетаскивания
       setIsDragging(true);
       setDragStart({ x: touches[0].clientX, y: touches[0].clientY });
       setDragDistance(0);
-      
+
       // Проверка на двойной тап
       const now = Date.now();
       if (now - lastTap < 300) {
@@ -226,13 +245,13 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
         setUserMovedTree(false);
       }
       setLastTap(now);
-      
+
     } else if (touches.length === 2) {
       // Два касания - начало зума
       setIsDragging(false);
       const distance = getTouchDistance(touches[0], touches[1]);
       const center = getTouchCenter(touches[0], touches[1]);
-      
+
       setLastTouchDistance(distance);
       setLastTouchCenter(center);
     }
@@ -243,49 +262,49 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
     e.preventDefault();
     const state = stateRef.current;
     const touches = e.touches;
-    
+
     if (touches.length === 1 && state.isDragging) {
       // Одно касание - перетаскивание
       const dx = touches[0].clientX - state.dragStart.x;
       const dy = touches[0].clientY - state.dragStart.y;
-      
+
       const distance = Math.sqrt(dx * dx + dy * dy);
-      
+
       setPosition({
         x: state.position.x + dx,
         y: state.position.y + dy
       });
-      
+
       setDragStart({ x: touches[0].clientX, y: touches[0].clientY });
       setDragDistance(state.dragDistance + distance);
-      
+
     } else if (touches.length === 2) {
       // Два касания - зум
       const distance = getTouchDistance(touches[0], touches[1]);
       const center = getTouchCenter(touches[0], touches[1]);
-      
+
       if (state.lastTouchDistance > 0) {
         const scaleFactor = distance / state.lastTouchDistance;
         let newScale = state.scale * scaleFactor;
-        
+
         // Ограничения масштаба
         newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-        
+
         if (newScale !== state.scale && svgRef.current) {
           const rect = svgRef.current.getBoundingClientRect();
           const offsetX = center.x - rect.left;
           const offsetY = center.y - rect.top;
-          
+
           const factor = newScale / state.scale;
           const newX = offsetX - factor * (offsetX - state.position.x);
           const newY = offsetY - factor * (offsetY - state.position.y);
-          
+
           setScale(newScale);
           setPosition({ x: newX, y: newY });
           setUserMovedTree(true);
         }
       }
-      
+
       setLastTouchDistance(distance);
       setLastTouchCenter(center);
     }
@@ -295,15 +314,15 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
   const handleTouchEnd = useCallback((e) => {
     e.preventDefault();
     const state = stateRef.current;
-    
+
     if (e.touches.length === 0) {
       // Все касания завершены
       const wasDragging = state.dragDistance > DRAG_THRESHOLD;
-      
+
       if (wasDragging) {
         setUserMovedTree(true);
       }
-      
+
       setIsDragging(false);
       setDragDistance(0);
       setLastTouchDistance(0);
@@ -323,16 +342,16 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
     const handleContainerWheel = (e) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        
+
         if (!svgRef.current) return;
-        
+
         const rect = svgContainer.getBoundingClientRect();
         const offsetX = e.clientX - rect.left;
         const offsetY = e.clientY - rect.top;
-        
+
         const zoomFactor = e.deltaY < 0 ? ZOOM_FACTOR : (1 / ZOOM_FACTOR);
         let newScale = scale * zoomFactor;
-        
+
         if (newScale > MAX_SCALE) {
           if (scale >= MAX_SCALE) return;
           newScale = MAX_SCALE;
@@ -341,11 +360,11 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
           if (scale <= MIN_SCALE) return;
           newScale = MIN_SCALE;
         }
-        
+
         const factor = newScale / scale;
         const newX = offsetX - factor * (offsetX - position.x);
         const newY = offsetY - factor * (offsetY - position.y);
-        
+
         setScale(newScale);
         setPosition({ x: newX, y: newY });
         setUserMovedTree(true);
@@ -360,10 +379,10 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
         }
       }
     };
-    
+
     svgContainer.addEventListener('wheel', handleContainerWheel, { passive: false });
     document.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       if (svgContainer) {
         svgContainer.removeEventListener('wheel', handleContainerWheel);
@@ -375,10 +394,10 @@ export const useTreeNavigation = (treeLayout, boundaries) => {
   // Сброс масштаба
   const handleDoubleClick = useCallback(() => {
     if (!isTouch) { // Только для мыши, не для touch
-      setScale(0.8);
+      setScale(MIN_SCALE); // Двойной клик = максимальное отдаление
       setUserMovedTree(false);
     }
-  }, [isTouch]);
+  }, [isTouch, MIN_SCALE]);
 
   return {
     scale,
