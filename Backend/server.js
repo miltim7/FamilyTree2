@@ -208,10 +208,18 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// НОВЫЙ ENDPOINT: Авторизация администратора
+// ОБНОВЛЕННЫЙ ENDPOINT: Авторизация администратора с логированием
 app.post('/api/auth/login', (req, res) => {
     try {
         const { password } = req.body;
+        
+        // ВРЕМЕННОЕ ЛОГИРОВАНИЕ для отладки
+        console.log('=== ОТЛАДКА АВТОРИЗАЦИИ ===');
+        console.log('Полученный пароль:', password);
+        console.log('ADMIN_PASSWORD из .env:', process.env.ADMIN_PASSWORD);
+        console.log('ADMIN_PASSWORD константа:', ADMIN_PASSWORD);
+        console.log('NODE_ENV:', process.env.NODE_ENV);
+        console.log('==========================');
         
         if (!password) {
             return res.status(400).json({
