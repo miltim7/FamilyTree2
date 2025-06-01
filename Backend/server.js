@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ОБНОВЛЕННАЯ КОНСТАНТА: Пароль администратора из переменных окружения
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const ADMIN_PASSWORD = 'admin123';
 
 // Пути к файлам
 const DATA_FILE = path.join(__dirname, 'data', 'family-data.json');
