@@ -4,6 +4,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
+// ИСПРАВЛЕНИЕ: Добавляем функцию для определения API URL
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://familytree2.onrender.com/api';  // ВАШ РЕАЛЬНЫЙ URL
+  }
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -33,10 +43,10 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  // Вход в систему
+  // ИСПРАВЛЕННЫЙ вход в систему
   const login = async (password) => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
