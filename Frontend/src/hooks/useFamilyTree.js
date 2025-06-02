@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { TREE_CONSTANTS } from '../constants/treeConstants';
 import familyTreeAPI from '../services/api';
 import articlesAPI from '../services/articlesApi';
-import { getDefaultPhoto } from '../utils/familyUtils'; // НОВЫЙ ИМПОРТ
+import { getDefaultPhoto } from '../utils/familyUtils';
 
 export const useFamilyTree = () => {
   // Основное состояние
@@ -22,8 +22,8 @@ export const useFamilyTree = () => {
   const [recentArticles, setRecentArticles] = useState([]);
   const [articlesLoading, setArticlesLoading] = useState(false);
 
-  // Состояние для скрытых поколений
-  const [hiddenGenerations, setHiddenGenerations] = useState({});
+  // ОБНОВЛЕННОЕ состояние для скрытых поколений - теперь хранит минимальный скрытый уровень
+  const [hiddenFromLevel, setHiddenFromLevel] = useState(null);
   
   // Состояние для отображения ветки родственника
   const [selectedBranch, setSelectedBranch] = useState(null);
@@ -91,7 +91,7 @@ export const useFamilyTree = () => {
   // Загрузка данных при инициализации
   useEffect(() => {
     loadFamilyData();
-    loadRecentArticles(); // НОВОЕ: Загружаем статьи
+    loadRecentArticles();
   }, []);
 
   // Загрузка данных с сервера
@@ -121,7 +121,7 @@ export const useFamilyTree = () => {
     }
   }, []);
 
-  // НОВАЯ ФУНКЦИЯ: Загрузка последних статей
+  // Загрузка последних статей
   const loadRecentArticles = useCallback(async () => {
     try {
       setArticlesLoading(true);
@@ -135,14 +135,13 @@ export const useFamilyTree = () => {
       setRecentArticles(sortedArticles);
     } catch (error) {
       console.error('Ошибка загрузки статей:', error);
-      // Не показываем ошибку пользователю, просто оставляем пустой массив
       setRecentArticles([]);
     } finally {
       setArticlesLoading(false);
     }
   }, []);
 
-  // НОВАЯ ФУНКЦИЯ: Загрузка статей персоны
+  // Загрузка статей персоны
   const loadPersonArticles = useCallback(async (personId) => {
     try {
       const articles = await articlesAPI.getPersonArticles(personId);
@@ -153,10 +152,9 @@ export const useFamilyTree = () => {
     }
   }, []);
 
-  // ИСПРАВЛЕННАЯ ФУНКЦИЯ: Установка модального окна персоны с загрузкой статей
+  // Установка модального окна персоны с загрузкой статей
   const setPersonInfoModalWithArticles = useCallback(async (modalData) => {
     if (modalData.isOpen && modalData.personId) {
-      // ИСПРАВЛЕНИЕ: Загружаем статьи только для основных персон, НЕ для супругов
       let articles = [];
       if (!modalData.isSpouse) {
         articles = await loadPersonArticles(modalData.personId);
@@ -190,28 +188,73 @@ export const useFamilyTree = () => {
     }
   }, [notification]);
 
-  // Функция скрытия/отображения поколения
-  const toggleGeneration = useCallback((nodeId) => {
-    setHiddenGenerations(prev => {
-      const newHiddenGenerations = { ...prev };
-      if (newHiddenGenerations[nodeId]) {
-        delete newHiddenGenerations[nodeId];
-      } else {
-        newHiddenGenerations[nodeId] = true;
+  // НОВАЯ ЛОГИКА: Функция скрытия поколений по уровням
+  const hideGenerationsFromLevel = useCallback((level) => {
+    setHiddenFromLevel(prevLevel => {
+      // Если уже скрыт этот уровень - показываем
+      if (prevLevel === level) {
+        return null;
       }
-      return newHiddenGenerations;
+      // Если скрыт более высокий уровень - не меняем
+      if (prevLevel !== null && prevLevel < level) {
+        showNotification(`Поколения уже скрыты с уровня ${prevLevel + 1}`, 'info');
+        return prevLevel;
+      }
+      // Скрываем с нового уровня
+      return level;
     });
-  }, []);
+  }, [showNotification]);
   
-  // Сброс всех скрытий
+  // НОВАЯ ФУНКЦИЯ: Сброс всех скрытий
   const resetHiddenGenerations = useCallback(() => {
-    setHiddenGenerations({});
+    setHiddenFromLevel(null);
   }, []);
   
-  // Проверка, скрыто ли поколение
-  const isGenerationHidden = useCallback((nodeId) => {
-    return !!hiddenGenerations[nodeId];
-  }, [hiddenGenerations]);
+  // НОВАЯ ФУНКЦИЯ: Проверка, скрыто ли поколение
+  const isGenerationHidden = useCallback((level) => {
+    return hiddenFromLevel !== null && level > hiddenFromLevel;
+  }, [hiddenFromLevel]);
+
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Получение информации о скрытии для персоны
+  const getHideInfo = useCallback((personLevel) => {
+    if (hiddenFromLevel === null) return null;
+    
+    if (hiddenFromLevel === personLevel) {
+      // Эта персона является точкой скрытия
+      return {
+        isHidePoint: true,
+        hiddenLevelsCount: getTotalLevels() - personLevel
+      };
+    }
+    
+    if (hiddenFromLevel < personLevel) {
+      // Эта персона скрыта
+      return {
+        isHidden: true
+      };
+    }
+    
+    return null;
+  }, [hiddenFromLevel]);
+
+  // Вспомогательная функция для подсчета общего количества уровней
+  const getTotalLevels = useCallback(() => {
+    if (!familyData) return 0;
+    
+    const findMaxLevel = (node, level = 0) => {
+      let maxLevel = level;
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          if (child) {
+            maxLevel = Math.max(maxLevel, findMaxLevel(child, level + 1));
+          }
+        }
+      }
+      return maxLevel;
+    };
+    
+    return findMaxLevel(familyData);
+  }, [familyData]);
 
   // Функция переключения ветки родственника
   const toggleBranch = useCallback((personId) => {
@@ -222,7 +265,7 @@ export const useFamilyTree = () => {
     }
   }, [selectedBranch]);
 
-  // НОВАЯ ФУНКЦИЯ: Открыть редактирование персоны
+  // Открыть редактирование персоны
   const openEditModal = useCallback((person, isSpouse, personId) => {
     setEditModal({
       isOpen: true,
@@ -239,7 +282,7 @@ export const useFamilyTree = () => {
     });
   }, []);
 
-  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Подтвердить редактирование с дефолтными фотографиями
+  // Подтвердить редактирование с дефолтными фотографиями
   const confirmEditPerson = useCallback(async () => {
     const { name, gender, photo, lifeYears, profession, birthPlace, biography, personId, isSpouse } = editModal;
     
@@ -251,13 +294,12 @@ export const useFamilyTree = () => {
     try {
       setEditModal(prev => ({ ...prev, loading: true }));
       
-      // НОВАЯ ЛОГИКА: Устанавливаем дефолтную фотографию если не выбрана
       const finalPhoto = photo && photo.trim() ? photo : getDefaultPhoto(gender);
       
       const personData = {
         name: name,
         gender: gender,
-        photo: finalPhoto, // Используем финальную фотографию
+        photo: finalPhoto,
         lifeYears: lifeYears || '',
         profession: profession || '',
         birthPlace: birthPlace || '',
@@ -288,7 +330,6 @@ export const useFamilyTree = () => {
         loading: false
       });
       
-      // Закрываем также модальное окно информации
       setPersonInfoModal({
         isOpen: false,
         person: null,
@@ -305,7 +346,7 @@ export const useFamilyTree = () => {
     }
   }, [editModal, showNotification]);
 
-  // НОВАЯ ФУНКЦИЯ: Удалить персону
+  // Удалить персону
   const deletePerson = useCallback(async (personId, isSpouse) => {
     const confirmMessage = isSpouse 
       ? "Вы уверены, что хотите удалить супруга(-у)?"
@@ -326,7 +367,6 @@ export const useFamilyTree = () => {
       setFamilyData(result.data);
       showNotification(result.message, 'success');
       
-      // Закрываем модальное окно информации
       setPersonInfoModal({
         isOpen: false,
         person: null,
@@ -373,7 +413,7 @@ export const useFamilyTree = () => {
     setSelectionMode('spouse');
   }, [spouseModal.name, showNotification]);
   
-  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Подтвердить добавление супруга с дефолтной фотографией
+  // Подтвердить добавление супруга с дефолтной фотографией
   const confirmAddSpouse = useCallback(async () => {
     const { name, gender, photo, lifeYears, profession, birthPlace, biography, targetPersonId } = spouseModal;
     
@@ -390,13 +430,12 @@ export const useFamilyTree = () => {
     try {
       setSpouseModal(prev => ({ ...prev, loading: true }));
       
-      // НОВАЯ ЛОГИКА: Устанавливаем дефолтную фотографию если не выбрана
       const finalPhoto = photo && photo.trim() ? photo : getDefaultPhoto(gender);
       
       const spouseData = {
         name: name,
         gender: gender,
-        photo: finalPhoto, // Используем финальную фотографию
+        photo: finalPhoto,
         lifeYears: lifeYears || '',
         profession: profession || '',
         birthPlace: birthPlace || '',
@@ -465,7 +504,7 @@ export const useFamilyTree = () => {
     setSelectionMode('parent');
   }, [childModal.name, showNotification]);
   
-  // ОБНОВЛЕННАЯ ФУНКЦИЯ: Подтвердить добавление ребенка с дефолтной фотографией
+  // Подтвердить добавление ребенка с дефолтной фотографией
   const confirmAddChild = useCallback(async () => {
     const { name, gender, photo, lifeYears, profession, birthPlace, biography, parentId } = childModal;
     
@@ -482,13 +521,12 @@ export const useFamilyTree = () => {
     try {
       setChildModal(prev => ({ ...prev, loading: true }));
       
-      // НОВАЯ ЛОГИКА: Устанавливаем дефолтную фотографию если не выбрана
       const finalPhoto = photo && photo.trim() ? photo : getDefaultPhoto(gender);
       
       const childData = {
         name: name,
         gender: gender,
-        photo: finalPhoto, // Используем финальную фотографию
+        photo: finalPhoto,
         lifeYears: lifeYears || '',
         profession: profession || '',
         birthPlace: birthPlace || '',
@@ -505,7 +543,6 @@ export const useFamilyTree = () => {
       setFamilyData(result.data);
       showNotification('Ребенок успешно добавлен!', 'success');
       
-      // НОВОЕ: Обновляем статьи после добавления ребенка
       loadRecentArticles();
       
       setChildModal({
@@ -597,7 +634,7 @@ export const useFamilyTree = () => {
     hoveredPerson,
     setHoveredPerson,
     notification,
-    hiddenGenerations,
+    hiddenFromLevel, // ОБНОВЛЕНО
     selectedBranch,
     setSelectedBranch,
     personInfoModal,
@@ -611,17 +648,18 @@ export const useFamilyTree = () => {
     selectionMode,
     setSelectionMode,
     
-    // НОВЫЕ ПОЛЯ: Статьи
+    // Статьи
     recentArticles,
     articlesLoading,
     
     // Функции
     loadFamilyData,
-    loadRecentArticles, // НОВАЯ ФУНКЦИЯ
+    loadRecentArticles,
     showNotification,
-    toggleGeneration,
-    resetHiddenGenerations,
-    isGenerationHidden,
+    hideGenerationsFromLevel, // НОВОЕ
+    resetHiddenGenerations,   // ОБНОВЛЕНО
+    isGenerationHidden,       // ОБНОВЛЕНО
+    getHideInfo,             // НОВОЕ
     toggleBranch,
     openEditModal,
     confirmEditPerson,

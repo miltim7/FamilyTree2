@@ -13,10 +13,7 @@ import RecentArticles from './RecentArticles';
 import { PersonInfoModal, EditPersonModal, AddSpouseModal, AddChildModal } from './Modals';
 
 const FamilyTree = () => {
-  // НОВОЕ: Получаем статус авторизации
   const { isAuthenticated } = useAuth();
-
-  // Используем кастомные хуки
   const familyTreeState = useFamilyTree();
 
   // Состояние для дерева
@@ -26,17 +23,17 @@ const FamilyTree = () => {
   // Хук навигации
   const navigationState = useTreeNavigation(treeLayout, boundaries);
 
-  // Обновление макета при изменении данных или скрытых поколений
+  // ОБНОВЛЕННОЕ: Обновление макета при изменении данных или скрытых уровней
   useEffect(() => {
     if (familyTreeState.familyData) {
       updateTreeLayout();
     }
-  }, [familyTreeState.familyData, familyTreeState.hiddenGenerations]);
+  }, [familyTreeState.familyData, familyTreeState.hiddenFromLevel]);
 
   // Обновление макета дерева
   const updateTreeLayout = () => {
     try {
-      const layout = generateTreeLayout(familyTreeState.familyData, familyTreeState.hiddenGenerations);
+      const layout = generateTreeLayout(familyTreeState.familyData, familyTreeState.hiddenFromLevel);
       const newBoundaries = getBoundaries(layout);
 
       setTreeLayout(layout);
@@ -51,11 +48,8 @@ const FamilyTree = () => {
     if (!familyTreeState.selectedBranch) return true;
 
     const bloodRelatives = getBloodRelatives(familyTreeState.familyData, familyTreeState.selectedBranch);
-
-    // ИСПРАВЛЕНО: Проверяем напрямую по nodeId (включая -spouse суффикс)
     return bloodRelatives.has(nodeId);
   };
-
 
   // Обработка клика по узлу
   const handleNodeClick = (e, nodeId, nodeType, nodeName) => {
@@ -155,6 +149,11 @@ const FamilyTree = () => {
       console.error("Ошибка при выборе персоны:", error);
       familyTreeState.showNotification("Произошла ошибка при выборе персоны");
     }
+  };
+
+  // НОВАЯ ФУНКЦИЯ: Обработка скрытия поколений
+  const handleHideGenerations = (nodeLevel) => {
+    familyTreeState.hideGenerationsFromLevel(nodeLevel);
   };
 
   // Индикатор загрузки
@@ -291,9 +290,9 @@ const FamilyTree = () => {
           connections={treeLayout.connections}
           hoveredPerson={familyTreeState.hoveredPerson}
           setHoveredPerson={familyTreeState.setHoveredPerson}
-          isGenerationHidden={familyTreeState.isGenerationHidden}
-          onToggleGeneration={familyTreeState.toggleGeneration}
-          shouldShowNode={shouldShowNode} // НОВЫЙ ПАРАМЕТР
+          hiddenFromLevel={familyTreeState.hiddenFromLevel} // ОБНОВЛЕНО
+          onHideGenerations={handleHideGenerations} // НОВОЕ
+          shouldShowNode={shouldShowNode}
         />
 
         {/* Узлы (персоны и супруги) */}
@@ -307,9 +306,11 @@ const FamilyTree = () => {
             selectedPerson={familyTreeState.selectedPerson}
             selectionMode={familyTreeState.selectionMode}
             selectedBranch={familyTreeState.selectedBranch}
+            hiddenFromLevel={familyTreeState.hiddenFromLevel} // НОВОЕ
             shouldShowNode={shouldShowNode}
             onNodeClick={handleNodeClick}
             onBranchToggle={familyTreeState.toggleBranch}
+            onHideGenerations={handleHideGenerations} // НОВОЕ
           />
         ))}
       </g>
@@ -320,7 +321,7 @@ const FamilyTree = () => {
   return (
     <div id='tree-container' style={STYLES.container}>
 
-      {/* УПРОЩЕННЫЙ АДАПТИВНЫЙ БЛОК КНОПОК */}
+      {/* Панель кнопок */}
       <div style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -332,7 +333,7 @@ const FamilyTree = () => {
         width: '100%'
       }}>
 
-        {/* ЛЕВАЯ ГРУППА: Основные кнопки */}
+        {/* Левая группа: Основные кнопки */}
         <div style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -419,7 +420,8 @@ const FamilyTree = () => {
             </button>
           )}
 
-          {Object.keys(familyTreeState.hiddenGenerations).length > 0 && (
+          {/* НОВАЯ КНОПКА: Сброс скрытия поколений */}
+          {familyTreeState.hiddenFromLevel !== null && (
             <button
               onClick={familyTreeState.resetHiddenGenerations}
               style={{
@@ -427,15 +429,22 @@ const FamilyTree = () => {
                 ...STYLES.defaultViewButton,
                 fontSize: window.innerWidth < 768 ? '0.75rem' : '0.875rem',
                 padding: window.innerWidth < 768 ? '0.4rem 0.6rem' : '0.4rem 0.8rem',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem'
               }}
             >
-              {window.innerWidth < 768 ? 'Сброс' : 'Вид по умолчанию'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M1 4v6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              {window.innerWidth < 768 ? 'Показать все' : 'Показать все поколения'}
             </button>
           )}
         </div>
 
-        {/* ПРАВАЯ ГРУППА: Навигационные кнопки со стрелками */}
+        {/* Правая группа: Навигационные кнопки со стрелками */}
         <div style={{
           display: 'flex',
           gap: '0.25rem',
@@ -582,7 +591,6 @@ const FamilyTree = () => {
           }}
           onMouseDown={familyTreeState.selectionMode ? undefined : navigationState.handleMouseDown}
           onDoubleClick={navigationState.handleDoubleClick}
-          // НОВЫЕ touch события
           onTouchStart={familyTreeState.selectionMode ? undefined : navigationState.handleTouchStart}
           onTouchMove={familyTreeState.selectionMode ? undefined : navigationState.handleTouchMove}
           onTouchEnd={familyTreeState.selectionMode ? undefined : navigationState.handleTouchEnd}
@@ -599,7 +607,7 @@ const FamilyTree = () => {
         loading={familyTreeState.articlesLoading}
       />
 
-      {/* ОБНОВЛЕННЫЕ модальные окна - только для авторизованных */}
+      {/* Модальные окна - только для авторизованных */}
       {isAuthenticated && (
         <>
           <PersonInfoModal
@@ -664,6 +672,35 @@ const FamilyTree = () => {
           >
             Отмена выбора
           </button>
+        </div>
+      )}
+
+      {/* НОВОЕ: Индикатор скрытых поколений */}
+      {familyTreeState.hiddenFromLevel !== null && (
+        <div style={{
+          position: 'fixed',
+          top: '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#c0a282',
+          color: 'white',
+          padding: '0.5rem 1rem',
+          borderRadius: '0.5rem',
+          boxShadow: '0 4px 6px rgba(48, 49, 51, 0.1)',
+          zIndex: 10,
+          fontSize: '0.875rem',
+          fontFamily: 'Montserrat, sans-serif',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <line x1="2" y1="2" x2="22" y2="22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Скрыты поколения начиная с уровня {familyTreeState.hiddenFromLevel + 1}
         </div>
       )}
 

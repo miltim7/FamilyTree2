@@ -186,69 +186,68 @@ const PersonNode = ({
         </g>
       )}
       
-      {/* ИКОНКА ВЕТКИ РОДСТВЕННИКА - только для основных персон */}
-      {!isSpouse && (
-        <g
-          style={{
-            ...NODE_STYLES.branchIcon,
-            // Показываем иконку при hover (если не отфильтрована) ИЛИ если ветка активна
-            opacity: (isHovered && !isFiltered) || isBranchSelected ? 1 : 0,
-            transition: 'opacity 0.3s ease'
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            // ИСПРАВЛЕНО: используем правильный ID для переключения ветки
-            onBranchToggle(normalizedId);
-          }}
-        >
-          <circle
-            cx={node.width - 20}
-            cy={20}
-            r={10}
-            style={isBranchSelected ? NODE_STYLES.branchIconBackgroundActive : NODE_STYLES.branchIconBackground}
+      {/* ОБНОВЛЕННАЯ ИКОНКА ВЕТКИ РОДСТВЕННИКА - теперь и для супругов */}
+      <g
+        style={{
+          ...NODE_STYLES.branchIcon,
+          // Показываем иконку при hover (если не отфильтрована) ИЛИ если ветка активна
+          opacity: (isHovered && !isFiltered) || isBranchSelected ? 1 : 0,
+          transition: 'opacity 0.3s ease'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          // ИСПРАВЛЕНО: используем правильный ID для переключения ветки
+          // Для супругов тоже используем ID основной персоны
+          onBranchToggle(normalizedId);
+        }}
+      >
+        <circle
+          cx={node.width - 20}
+          cy={20}
+          r={10}
+          style={isBranchSelected ? NODE_STYLES.branchIconBackgroundActive : NODE_STYLES.branchIconBackground}
+        />
+        {/* Иконка дерева */}
+        <g transform={`translate(${node.width - 20}, 20)`}>
+          {/* Ствол */}
+          <line
+            x1={0}
+            y1={2}
+            x2={0}
+            y2={7}
+            style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
           />
-          {/* Иконка дерева */}
-          <g transform={`translate(${node.width - 20}, 20)`}>
-            {/* Ствол */}
-            <line
-              x1={0}
-              y1={2}
-              x2={0}
-              y2={7}
-              style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
-            />
-            {/* Ветки */}
-            <line
-              x1={-4}
-              y1={-2}
-              x2={0}
-              y2={2}
-              style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
-            />
-            <line
-              x1={4}
-              y1={-2}
-              x2={0}
-              y2={2}
-              style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
-            />
-            <line
-              x1={-6}
-              y1={-6}
-              x2={-4}
-              y2={-2}
-              style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
-            />
-            <line
-              x1={6}
-              y1={-6}
-              x2={4}
-              y2={-2}
-              style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
-            />
-          </g>
+          {/* Ветки */}
+          <line
+            x1={-4}
+            y1={-2}
+            x2={0}
+            y2={2}
+            style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
+          />
+          <line
+            x1={4}
+            y1={-2}
+            x2={0}
+            y2={2}
+            style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
+          />
+          <line
+            x1={-6}
+            y1={-6}
+            x2={-4}
+            y2={-2}
+            style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
+          />
+          <line
+            x1={6}
+            y1={-6}
+            x2={4}
+            y2={-2}
+            style={isBranchSelected ? NODE_STYLES.branchIconTreeActive : NODE_STYLES.branchIconTree}
+          />
         </g>
-      )}
+      </g>
       
       {/* Текст имени */}
       <text

@@ -12,7 +12,8 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
     title: '',
     photo: '',
     description: '',
-    content: ''
+    content: '',
+    createdAt: new Date().toISOString() // НОВОЕ: дата создания
   });
   const [loading, setLoading] = useState(false);
 
@@ -49,6 +50,18 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
 
   const allPersons = familyData ? getAllPersons(familyData) : [];
 
+  // НОВОЕ: Форматирование даты для input type="datetime-local"
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -64,7 +77,8 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
         title: formData.title.trim(),
         photo: formData.photo || null,
         description: formData.description.trim(),
-        content: formData.content.trim()
+        content: formData.content.trim(),
+        createdAt: formData.createdAt // НОВОЕ: передаем дату создания
       });
       
       // Сброс формы
@@ -73,7 +87,8 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
         title: '',
         photo: '',
         description: '',
-        content: ''
+        content: '',
+        createdAt: new Date().toISOString()
       });
     } catch (error) {
       console.error('Ошибка создания статьи:', error);
@@ -88,7 +103,8 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
       title: '',
       photo: '',
       description: '',
-      content: ''
+      content: '',
+      createdAt: new Date().toISOString()
     });
     onClose();
   };
@@ -175,6 +191,17 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
                 style={STYLES.input}
                 placeholder="Введите название статьи"
                 required
+              />
+            </div>
+
+            {/* НОВОЕ: Дата создания */}
+            <div style={STYLES.formGroup}>
+              <label style={STYLES.label}>Дата создания:</label>
+              <input
+                type="datetime-local"
+                value={formatDateForInput(formData.createdAt)}
+                onChange={(e) => setFormData(prev => ({ ...prev, createdAt: new Date(e.target.value).toISOString() }))}
+                style={STYLES.input}
               />
             </div>
 
