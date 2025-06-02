@@ -68,11 +68,19 @@ class ArticlesAPI {
     });
   }
 
-  // Обновить статью
+  // ОБНОВЛЕННЫЙ метод обновления статьи с поддержкой новых полей
   async updateArticle(articleId, articleData) {
     return await this.request(`/articles/${articleId}`, {
       method: 'PUT',
-      body: articleData
+      body: {
+        title: articleData.title,
+        photo: articleData.photo,
+        description: articleData.description,
+        content: articleData.content,
+        // НОВОЕ: Поддержка смены автора и даты
+        ...(articleData.personId && { personId: articleData.personId }),
+        ...(articleData.createdAt && { createdAt: articleData.createdAt })
+      }
     });
   }
 

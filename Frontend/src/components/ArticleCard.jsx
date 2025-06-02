@@ -64,14 +64,6 @@ const ArticleCard = ({ article }) => {
     fontFamily: 'Montserrat, sans-serif'
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   const handleClick = () => {
     navigate(`/articles/${article.id}`);
   };
@@ -107,14 +99,7 @@ const ArticleCard = ({ article }) => {
         {article.description && (
           <p style={descriptionStyle}>{article.description}</p>
         )}
-        <div style={{
-          fontSize: '0.75rem',
-          color: '#999',
-          marginTop: '0.5rem',
-          fontFamily: 'Montserrat, sans-serif'
-        }}>
-          {formatDate(article.createdAt)}
-        </div>
+        {/* УДАЛЕНО: блок с датой создания */}
       </div>
     </div>
   );

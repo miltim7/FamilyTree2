@@ -11,9 +11,54 @@ const ArticleModal = ({ article, onClose, onUpdate, onDelete, familyData }) => {
     title: article.title || '',
     photo: article.photo || '',
     description: article.description || '',
-    content: article.content || ''
+    content: article.content || '',
+    // НОВОЕ: Добавляем поля для автора и даты
+    personId: article.personId || '',
+    createdAt: article.createdAt || ''
   });
   const [loading, setLoading] = useState(false);
+
+  // НОВОЕ: Получаем список всех персон для выбора автора
+  const getAllPersons = (node, persons = []) => {
+    if (!node) return persons;
+    
+    persons.push({
+      id: node.id,
+      name: node.name,
+      type: 'person'
+    });
+    
+    if (node.spouse) {
+      persons.push({
+        id: node.id,
+        name: node.spouse.name,
+        type: 'spouse',
+        isSpouse: true
+      });
+    }
+    
+    if (node.children && Array.isArray(node.children)) {
+      node.children.forEach(child => {
+        getAllPersons(child, persons);
+      });
+    }
+    
+    return persons;
+  };
+
+  const allPersons = familyData ? getAllPersons(familyData) : [];
+
+  // НОВОЕ: Форматирование даты для input type="datetime-local"
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -25,9 +70,23 @@ const ArticleModal = ({ article, onClose, onUpdate, onDelete, familyData }) => {
       return;
     }
 
+    // НОВОЕ: Проверяем что автор выбран
+    if (!editData.personId) {
+      alert('Выберите автора статьи');
+      return;
+    }
+
     setLoading(true);
     try {
-      await onUpdate(article.id, editData);
+      // НОВОЕ: Передаем все новые поля включая personId и createdAt
+      await onUpdate(article.id, {
+        title: editData.title,
+        photo: editData.photo,
+        description: editData.description,
+        content: editData.content,
+        personId: editData.personId,
+        createdAt: editData.createdAt
+      });
       setIsEditing(false);
     } catch (error) {
       console.error('Ошибка сохранения:', error);
@@ -41,7 +100,9 @@ const ArticleModal = ({ article, onClose, onUpdate, onDelete, familyData }) => {
       title: article.title || '',
       photo: article.photo || '',
       description: article.description || '',
-      content: article.content || ''
+      content: article.content || '',
+      personId: article.personId || '',
+      createdAt: article.createdAt || ''
     });
     setIsEditing(false);
   };
@@ -317,6 +378,49 @@ const ArticleModal = ({ article, onClose, onUpdate, onDelete, familyData }) => {
           overflowY: 'auto',
           padding: '2rem'
         }}>
+          {/* НОВОЕ: Поля автора и даты в режиме редактирования */}
+          {isEditing && (
+            <>
+              {/* Выбор автора */}
+              <div style={STYLES.formGroup}>
+                <label style={STYLES.label}>Автор статьи:</label>
+                <select
+                  value={editData.personId}
+                  onChange={(e) => setEditData(prev => ({ ...prev, personId: e.target.value }))}
+                  style={{
+                    ...STYLES.input,
+                    cursor: 'pointer'
+                  }}
+                  required
+                >
+                  <option value="">Выберите автора</option>
+                  {allPersons.map((person, index) => {
+                    const displayName = person.isSpouse 
+                      ? `${person.name} (супруг${person.name.endsWith('а') || person.name.endsWith('я') ? 'а' : ''})`
+                      : person.name;
+                    
+                    return (
+                      <option key={`${person.id}-${person.type}-${index}`} value={person.id}>
+                        {displayName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Дата создания */}
+              <div style={STYLES.formGroup}>
+                <label style={STYLES.label}>Дата создания:</label>
+                <input
+                  type="datetime-local"
+                  value={formatDateForInput(editData.createdAt)}
+                  onChange={(e) => setEditData(prev => ({ ...prev, createdAt: new Date(e.target.value).toISOString() }))}
+                  style={STYLES.input}
+                />
+              </div>
+            </>
+          )}
+
           {/* Фотография */}
           {(article.photo || isEditing) && (
             <div style={{ marginBottom: '2rem' }}>
@@ -363,16 +467,8 @@ const ArticleModal = ({ article, onClose, onUpdate, onDelete, familyData }) => {
                   value={editData.description}
                   onChange={(e) => setEditData(prev => ({ ...prev, description: e.target.value }))}
                   style={{
-                    width: '100%',
-                    minHeight: '100px',
-                    padding: '1rem',
-                    border: '2px solid #c0a282',
-                    borderRadius: '0.5rem',
-                    fontSize: '0.95rem',
-                    lineHeight: '1.6',
-                    fontFamily: 'Montserrat, sans-serif',
-                    resize: 'vertical',
-                    outline: 'none'
+                    ...STYLES.textarea,
+                    minHeight: '100px'
                   }}
                   placeholder="Краткое описание статьи"
                 />
@@ -409,16 +505,8 @@ const ArticleModal = ({ article, onClose, onUpdate, onDelete, familyData }) => {
                 value={editData.content}
                 onChange={(e) => setEditData(prev => ({ ...prev, content: e.target.value }))}
                 style={{
-                  width: '100%',
-                  minHeight: '250px',
-                  padding: '1rem',
-                  border: '2px solid #c0a282',
-                  borderRadius: '0.5rem',
-                  fontSize: '0.95rem',
-                  lineHeight: '1.6',
-                  fontFamily: 'Montserrat, sans-serif',
-                  resize: 'vertical',
-                  outline: 'none'
+                  ...STYLES.textarea,
+                  minHeight: '250px'
                 }}
                 placeholder="Полный текст статьи"
               />

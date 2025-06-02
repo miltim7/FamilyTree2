@@ -620,10 +620,11 @@ app.post('/api/articles', async (req, res) => {
 });
 
 // Обновить статью
+// Обновить статью
 app.put('/api/articles/:articleId', async (req, res) => {
     try {
         const { articleId } = req.params;
-        const { title, photo, description, content } = req.body;
+        const { title, photo, description, content, personId, createdAt } = req.body;
         
         if (!title?.trim()) {
             return res.status(400).json({
@@ -641,6 +642,22 @@ app.put('/api/articles/:articleId', async (req, res) => {
                 message: 'Статья не найдена'
             });
         }
+
+        // НОВОЕ: Если изменяется автор, проверяем что персона существует
+        let personName = articles[articleIndex].personName;
+        if (personId && personId !== articles[articleIndex].personId) {
+            const familyData = await readFamilyData();
+            const person = findPersonById(familyData, personId);
+            
+            if (!person) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Новый автор не найден в семейном древе'
+                });
+            }
+            
+            personName = person.name;
+        }
         
         articles[articleIndex] = {
             ...articles[articleIndex],
@@ -648,6 +665,10 @@ app.put('/api/articles/:articleId', async (req, res) => {
             photo: photo || null,
             description: description || '',
             content: content || '',
+            // НОВОЕ: Обновляем автора если указан
+            ...(personId && { personId: personId, personName: personName }),
+            // НОВОЕ: Обновляем дату создания если указана
+            ...(createdAt && { createdAt: createdAt }),
             updatedAt: new Date().toISOString()
         };
         

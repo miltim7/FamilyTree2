@@ -10,7 +10,6 @@ import { findPersonById } from '../utils/familyUtils';
 import PhotoUpload from './PhotoUpload';
 
 const ArticleView = () => {
-  // НОВОЕ: Получаем статус авторизации
   const { isAuthenticated } = useAuth();
   
   const { articleId } = useParams();
@@ -26,9 +25,54 @@ const ArticleView = () => {
     title: '',
     photo: '',
     description: '',
-    content: ''
+    content: '',
+    // НОВОЕ: Добавляем поля для автора и даты
+    personId: '',
+    createdAt: ''
   });
   const [saving, setSaving] = useState(false);
+
+  // НОВОЕ: Получаем список всех персон для выбора автора
+  const getAllPersons = (node, persons = []) => {
+    if (!node) return persons;
+    
+    persons.push({
+      id: node.id,
+      name: node.name,
+      type: 'person'
+    });
+    
+    if (node.spouse) {
+      persons.push({
+        id: node.id,
+        name: node.spouse.name,
+        type: 'spouse',
+        isSpouse: true
+      });
+    }
+    
+    if (node.children && Array.isArray(node.children)) {
+      node.children.forEach(child => {
+        getAllPersons(child, persons);
+      });
+    }
+    
+    return persons;
+  };
+
+  const allPersons = familyData ? getAllPersons(familyData) : [];
+
+  // НОВОЕ: Форматирование даты для input type="datetime-local"
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
   // Загрузка данных при инициализации
   useEffect(() => {
@@ -50,7 +94,6 @@ const ArticleView = () => {
       setLoading(true);
       setError(null);
       
-      // Загружаем статью и семейные данные параллельно
       const [articleData, familyTreeData] = await Promise.all([
         articlesAPI.getArticle(articleId),
         familyTreeAPI.getFamilyData()
@@ -62,7 +105,10 @@ const ArticleView = () => {
         title: articleData.title || '',
         photo: articleData.photo || '',
         description: articleData.description || '',
-        content: articleData.content || ''
+        content: articleData.content || '',
+        // НОВОЕ: Устанавливаем автора и дату создания
+        personId: articleData.personId || '',
+        createdAt: articleData.createdAt || ''
       });
       
     } catch (error) {
@@ -88,9 +134,23 @@ const ArticleView = () => {
       return;
     }
 
+    // НОВОЕ: Проверяем что автор выбран
+    if (!editData.personId) {
+      showNotification('Выберите автора статьи');
+      return;
+    }
+
     setSaving(true);
     try {
-      const result = await articlesAPI.updateArticle(articleId, editData);
+      // НОВОЕ: Передаем все новые поля включая personId и createdAt
+      const result = await articlesAPI.updateArticle(articleId, {
+        title: editData.title,
+        photo: editData.photo,
+        description: editData.description,
+        content: editData.content,
+        personId: editData.personId,
+        createdAt: editData.createdAt
+      });
       
       if (result.success) {
         setArticle(result.data);
@@ -112,7 +172,9 @@ const ArticleView = () => {
       title: article.title || '',
       photo: article.photo || '',
       description: article.description || '',
-      content: article.content || ''
+      content: article.content || '',
+      personId: article.personId || '',
+      createdAt: article.createdAt || ''
     });
     setIsEditing(false);
   };
@@ -320,6 +382,72 @@ const ArticleView = () => {
             </h1>
           )}
           
+          {/* НОВОЕ: Поля автора и даты в режиме редактирования */}
+          {isEditing && (
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '1fr 1fr', 
+                gap: '1rem',
+                marginBottom: '1rem'
+              }}>
+                {/* Выбор автора */}
+                <div>
+                  <label style={{
+                    ...STYLES.label,
+                    fontSize: '0.875rem',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Автор статьи:
+                  </label>
+                  <select
+                    value={editData.personId}
+                    onChange={(e) => setEditData(prev => ({ ...prev, personId: e.target.value }))}
+                    style={{
+                      ...STYLES.input,
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                    required
+                  >
+                    <option value="">Выберите автора</option>
+                    {allPersons.map((person, index) => {
+                      const displayName = person.isSpouse 
+                        ? `${person.name} (супруг${person.name.endsWith('а') || person.name.endsWith('я') ? 'а' : ''})`
+                        : person.name;
+                      
+                      return (
+                        <option key={`${person.id}-${person.type}-${index}`} value={person.id}>
+                          {displayName}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Дата создания */}
+                <div>
+                  <label style={{
+                    ...STYLES.label,
+                    fontSize: '0.875rem',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Дата создания:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formatDateForInput(editData.createdAt)}
+                    onChange={(e) => setEditData(prev => ({ ...prev, createdAt: new Date(e.target.value).toISOString() }))}
+                    style={{
+                      ...STYLES.input,
+                      fontSize: '0.875rem'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* Метаинформация */}
           <div style={{
             display: 'flex',
@@ -359,7 +487,7 @@ const ArticleView = () => {
             )}
           </div>
 
-          {/* ОБНОВЛЕННЫЕ кнопки действий - только для авторизованных */}
+          {/* Кнопки действий */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             {isAuthenticated && !isEditing ? (
               <>
@@ -478,7 +606,6 @@ const ArticleView = () => {
               </>
             ) : null}
 
-            {/* НОВОЕ: Сообщение для неавторизованных */}
             {!isAuthenticated && (
               <div style={{
                 backgroundColor: '#ffffffc3',

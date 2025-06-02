@@ -7,14 +7,6 @@ import { STYLES } from '../constants/treeConstants';
 const RecentArticles = ({ articles, loading }) => {
   const navigate = useNavigate();
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   const handleArticleClick = (articleId) => {
     navigate(`/articles/${articleId}`);
   };
@@ -253,7 +245,6 @@ const RecentArticles = ({ articles, loading }) => {
                     fontSize: '0.85rem',
                     color: '#666',
                     lineHeight: '1.4',
-                    marginBottom: '0.75rem',
                     fontFamily: 'Montserrat, sans-serif',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
@@ -264,22 +255,7 @@ const RecentArticles = ({ articles, loading }) => {
                   </p>
                 )}
                 
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: '#999',
-                  fontFamily: 'Montserrat, sans-serif',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="2"/>
-                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="2"/>
-                    <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" strokeWidth="2"/>
-                  </svg>
-                  {formatDate(article.createdAt)}
-                </div>
+                {/* УДАЛЕНО: блок с датой создания */}
               </div>
             </div>
           ))}
