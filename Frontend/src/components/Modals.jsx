@@ -1,17 +1,91 @@
 // Frontend\src\components\Modals.jsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { STYLES, NODE_STYLES } from '../constants/treeConstants';
 import PhotoUpload from './PhotoUpload';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import articlesAPI from '../services/articlesApi';
 
 // Модальное окно с информацией о персоне
 export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthenticated }) => {
   const navigate = useNavigate();
   
+  // НОВОЕ: Состояние для управления статьями
+  const [allArticles, setAllArticles] = useState([]);
+  const [personArticles, setPersonArticles] = useState([]);
+  const [availableArticles, setAvailableArticles] = useState([]);
+  const [showArticleSelector, setShowArticleSelector] = useState(false);
+  const [articlesLoading, setArticlesLoading] = useState(false);
+  
   // Блокируем скролл страницы при открытии модального окна
   useBodyScrollLock(modal.isOpen);
+  
+  // НОВОЕ: Загружаем статьи при открытии модала персоны (не супруга)
+  useEffect(() => {
+    if (modal.isOpen && modal.personId && !modal.isSpouse) {
+      loadArticlesData();
+    }
+  }, [modal.isOpen, modal.personId, modal.isSpouse]);
+
+  // НОВАЯ ФУНКЦИЯ: Загрузка всех статей и статей персоны
+  const loadArticlesData = async () => {
+    try {
+      setArticlesLoading(true);
+      
+      // Загружаем все статьи и статьи персоны параллельно
+      const [allArticlesData, personArticlesData] = await Promise.all([
+        articlesAPI.getAllArticles(),
+        articlesAPI.getPersonArticles(modal.personId)
+      ]);
+      
+      setAllArticles(allArticlesData);
+      setPersonArticles(personArticlesData);
+      
+      // Фильтруем доступные статьи (те, что еще не привязаны к этой персоне)
+      const linkedArticleIds = personArticlesData.map(article => article.id);
+      const available = allArticlesData.filter(article => !linkedArticleIds.includes(article.id));
+      setAvailableArticles(available);
+      
+    } catch (error) {
+      console.error('Ошибка загрузки статей:', error);
+    } finally {
+      setArticlesLoading(false);
+    }
+  };
+
+  // НОВАЯ ФУНКЦИЯ: Привязать статью к персоне
+  const handleLinkArticle = async (articleId) => {
+    try {
+      const result = await articlesAPI.linkArticleToPerson(articleId, modal.personId);
+      
+      if (result.success) {
+        await loadArticlesData(); // Перезагружаем данные
+        setShowArticleSelector(false);
+      }
+    } catch (error) {
+      console.error('Ошибка привязки статьи:', error);
+      alert('Ошибка при привязке статьи');
+    }
+  };
+
+  // НОВАЯ ФУНКЦИЯ: Отвязать статью от персоны
+  const handleUnlinkArticle = async (articleId) => {
+    if (!window.confirm('Отвязать эту статью от персоны?')) {
+      return;
+    }
+    
+    try {
+      const result = await articlesAPI.unlinkArticleFromPerson(articleId, modal.personId);
+      
+      if (result.success) {
+        await loadArticlesData(); // Перезагружаем данные
+      }
+    } catch (error) {
+      console.error('Ошибка отвязки статьи:', error);
+      alert('Ошибка при отвязке статьи');
+    }
+  };
   
   if (!modal.isOpen || !modal.person) return null;
 
@@ -338,34 +412,200 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
             </div>
           )}
 
-          {/* Статьи персоны - только для основных персон */}
+          {/* НОВЫЙ БЛОК: Статьи персоны - только для основных персон */}
           {!modal.isSpouse && (
             <div>
-              <h4 style={{
-                fontSize: '1.125rem',
-                fontWeight: '600',
-                color: '#303133',
-                marginBottom: '1rem',
-                fontFamily: 'Montserrat, sans-serif',
+              <div style={{
                 display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: '0.5rem'
+                marginBottom: '1rem'
               }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Статьи ({modal.articles ? modal.articles.length : 0})
-              </h4>
+                <h4 style={{
+                  fontSize: '1.125rem',
+                  fontWeight: '600',
+                  color: '#303133',
+                  fontFamily: 'Montserrat, sans-serif',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  margin: 0
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Статьи ({personArticles.length})
+                </h4>
 
-              {modal.articles && modal.articles.length > 0 ? (
+                {/* НОВАЯ КНОПКА: Добавить статью - только для авторизованных */}
+                {isAuthenticated && !showArticleSelector && availableArticles.length > 0 && (
+                  <button
+                    onClick={() => setShowArticleSelector(true)}
+                    style={{
+                      backgroundColor: '#c0a282',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'Montserrat, sans-serif'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#a08966'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#c0a282'}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Добавить статью
+                  </button>
+                )}
+              </div>
+
+              {/* НОВЫЙ БЛОК: Селектор статей */}
+              {showArticleSelector && (
+                <div style={{
+                  backgroundColor: '#ffffffc3',
+                  border: '2px solid #c0a282',
+                  borderRadius: '0.75rem',
+                  padding: '1rem',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '0.75rem'
+                  }}>
+                    <h5 style={{
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#303133',
+                      fontFamily: 'Montserrat, sans-serif',
+                      margin: 0
+                    }}>
+                      Выберите статью для привязки:
+                    </h5>
+                    <button
+                      onClick={() => setShowArticleSelector(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#666',
+                        cursor: 'pointer',
+                        fontSize: '1.2rem',
+                        padding: '0.25rem'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gap: '0.5rem',
+                    maxHeight: '200px',
+                    overflowY: 'auto'
+                  }}>
+                    {availableArticles.map(article => (
+                      <div
+                        key={article.id}
+                        style={{
+                          backgroundColor: 'white',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '0.5rem',
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8f8f8';
+                          e.currentTarget.style.borderColor = '#c0a282';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'white';
+                          e.currentTarget.style.borderColor = '#e0e0e0';
+                        }}
+                        onClick={() => handleLinkArticle(article.id)}
+                      >
+                        <div>
+                          <div style={{
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            color: '#303133',
+                            fontFamily: 'Montserrat, sans-serif'
+                          }}>
+                            {article.title}
+                          </div>
+                          {article.description && (
+                            <div style={{
+                              fontSize: '0.8rem',
+                              color: '#666',
+                              fontFamily: 'Montserrat, sans-serif',
+                              marginTop: '0.25rem'
+                            }}>
+                              {article.description.length > 60 
+                                ? `${article.description.slice(0, 60)}...` 
+                                : article.description
+                              }
+                            </div>
+                          )}
+                        </div>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    ))}
+
+                    {availableArticles.length === 0 && (
+                      <div style={{
+                        textAlign: 'center',
+                        color: '#666',
+                        fontSize: '0.875rem',
+                        fontFamily: 'Montserrat, sans-serif',
+                        padding: '1rem'
+                      }}>
+                        Все доступные статьи уже привязаны к этой персоне
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ОБНОВЛЕННЫЙ БЛОК: Отображение статей персоны */}
+              {articlesLoading ? (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  padding: '2rem'
+                }}>
+                  <div style={{
+                    width: '30px',
+                    height: '30px',
+                    border: '3px solid #ffffffc3',
+                    borderTop: '3px solid #c0a282',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                </div>
+              ) : personArticles.length > 0 ? (
                 <div style={{
                   display: 'grid',
                   gap: '1rem'
                 }}>
-                  {modal.articles.map(article => (
+                  {personArticles.map(article => (
                     <div
                       key={article.id}
                       style={{
@@ -377,7 +617,8 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                         gap: '1rem',
                         alignItems: 'flex-start',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = '#f8f8f8';
@@ -461,6 +702,40 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                         </div>
                       </div>
 
+                      {/* НОВАЯ КНОПКА: Отвязать статью - только для авторизованных */}
+                      {isAuthenticated && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnlinkArticle(article.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '0.5rem',
+                            right: '0.5rem',
+                            backgroundColor: '#303133',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            opacity: 0.7,
+                            transition: 'opacity 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => e.target.style.opacity = '1'}
+                          onMouseLeave={(e) => e.target.style.opacity = '0.7'}
+                          title="Отвязать статью"
+                        >
+                          ×
+                        </button>
+                      )}
+
                       {/* Стрелка */}
                       <div style={{
                         color: '#c0a282',
@@ -498,6 +773,19 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                   }}>
                     У этой персоны пока нет статей
                   </p>
+                  {isAuthenticated && availableArticles.length > 0 && (
+                    <button
+                      onClick={() => setShowArticleSelector(true)}
+                      style={{
+                        ...STYLES.button,
+                        ...STYLES.greenButton,
+                        marginTop: '1rem',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      Добавить статью
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -526,8 +814,8 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                 margin: 0,
                 lineHeight: '1.5'
               }}>
-                Статьи создаются только для основных персон семейного древа.<br/>
-                Супруги могут иметь свою информацию, но статьи привязываются к основной персоне.
+                Статьи привязываются только к основным персонам семейного древа.<br/>
+                Супруги могут иметь свою информацию, но статьи управляются через основную персону.
               </p>
             </div>
           )}

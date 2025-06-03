@@ -48,9 +48,9 @@ class ArticlesAPI {
     return response.data;
   }
 
-  // Получить статьи персоны
+  // ОБНОВЛЕННЫЙ метод: Получить статьи персоны через новый endpoint
   async getPersonArticles(personId) {
-    const response = await this.request(`/articles/person/${personId}`);
+    const response = await this.request(`/family/person/${personId}/articles`);
     return response.data;
   }
 
@@ -60,15 +60,21 @@ class ArticlesAPI {
     return response.data;
   }
 
-  // Создать статью
+  // ОБНОВЛЕННЫЙ метод: Создать статью БЕЗ АВТОРА
   async createArticle(articleData) {
     return await this.request('/articles', {
       method: 'POST',
-      body: articleData
+      body: {
+        title: articleData.title,
+        photo: articleData.photo,
+        description: articleData.description,
+        content: articleData.content
+        // Убираем personId - статьи создаются независимо
+      }
     });
   }
 
-  // ОБНОВЛЕННЫЙ метод обновления статьи с поддержкой новых полей
+  // ОБНОВЛЕННЫЙ метод: Обновление статьи БЕЗ АВТОРА
   async updateArticle(articleId, articleData) {
     return await this.request(`/articles/${articleId}`, {
       method: 'PUT',
@@ -76,10 +82,8 @@ class ArticlesAPI {
         title: articleData.title,
         photo: articleData.photo,
         description: articleData.description,
-        content: articleData.content,
-        // НОВОЕ: Поддержка смены автора и даты
-        ...(articleData.personId && { personId: articleData.personId }),
-        ...(articleData.createdAt && { createdAt: articleData.createdAt })
+        content: articleData.content
+        // Убираем изменение автора - связи управляются отдельно
       }
     });
   }
@@ -87,6 +91,20 @@ class ArticlesAPI {
   // Удалить статью
   async deleteArticle(articleId) {
     return await this.request(`/articles/${articleId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // НОВЫЙ метод: Привязать статью к персоне
+  async linkArticleToPerson(articleId, personId) {
+    return await this.request(`/articles/${articleId}/link-person/${personId}`, {
+      method: 'POST'
+    });
+  }
+
+  // НОВЫЙ метод: Отвязать статью от персоны
+  async unlinkArticleFromPerson(articleId, personId) {
+    return await this.request(`/articles/${articleId}/unlink-person/${personId}`, {
       method: 'DELETE'
     });
   }

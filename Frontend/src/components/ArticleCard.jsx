@@ -46,13 +46,6 @@ const ArticleCard = ({ article }) => {
     fontFamily: 'Montserrat, sans-serif'
   };
 
-  const authorStyle = {
-    fontSize: '0.875rem',
-    color: '#c0a282',
-    marginBottom: '0.5rem',
-    fontFamily: 'Montserrat, sans-serif'
-  };
-
   const descriptionStyle = {
     fontSize: '0.875rem',
     color: '#303133',
@@ -95,11 +88,13 @@ const ArticleCard = ({ article }) => {
       
       <div style={contentStyle}>
         <h3 style={titleStyle}>{article.title}</h3>
-        <p style={authorStyle}>Автор: {article.personName}</p>
+        
+        {/* УБРАНО: отображение автора */}
+        {/* УБРАНО: отображение количества связанных персон */}
+        
         {article.description && (
           <p style={descriptionStyle}>{article.description}</p>
         )}
-        {/* УДАЛЕНО: блок с датой создания */}
       </div>
     </div>
   );

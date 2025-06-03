@@ -3,92 +3,45 @@
 import React, { useState } from 'react';
 import { STYLES } from '../constants/treeConstants';
 import PhotoUpload from './PhotoUpload';
-import { findPersonById } from '../utils/familyUtils';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
-const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
+const CreateArticleModal = ({ isOpen, onClose, onCreate }) => {
   const [formData, setFormData] = useState({
-    personId: '',
     title: '',
     photo: '',
     description: '',
-    content: '',
-    createdAt: new Date().toISOString() // НОВОЕ: дата создания
+    content: ''
+    // УБРАНО: personId и createdAt - статьи создаются независимо
   });
   const [loading, setLoading] = useState(false);
 
   // Блокируем скролл страницы при открытии модального окна
   useBodyScrollLock(isOpen);
 
-  // Получаем список всех персон для выбора
-  const getAllPersons = (node, persons = []) => {
-    if (!node) return persons;
-    
-    persons.push({
-      id: node.id,
-      name: node.name,
-      type: 'person'
-    });
-    
-    if (node.spouse) {
-      persons.push({
-        id: node.id,
-        name: node.spouse.name,
-        type: 'spouse',
-        isSpouse: true
-      });
-    }
-    
-    if (node.children && Array.isArray(node.children)) {
-      node.children.forEach(child => {
-        getAllPersons(child, persons);
-      });
-    }
-    
-    return persons;
-  };
-
-  const allPersons = familyData ? getAllPersons(familyData) : [];
-
-  // НОВОЕ: Форматирование даты для input type="datetime-local"
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.personId || !formData.title.trim()) {
-      alert('Выберите автора и укажите название статьи');
+    if (!formData.title.trim()) {
+      alert('Укажите название статьи');
       return;
     }
 
     setLoading(true);
     try {
       await onCreate({
-        personId: formData.personId,
         title: formData.title.trim(),
         photo: formData.photo || null,
         description: formData.description.trim(),
-        content: formData.content.trim(),
-        createdAt: formData.createdAt // НОВОЕ: передаем дату создания
+        content: formData.content.trim()
+        // УБРАНО: personId и createdAt
       });
       
       // Сброс формы
       setFormData({
-        personId: '',
         title: '',
         photo: '',
         description: '',
-        content: '',
-        createdAt: new Date().toISOString()
+        content: ''
       });
     } catch (error) {
       console.error('Ошибка создания статьи:', error);
@@ -99,12 +52,10 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
 
   const handleClose = () => {
     setFormData({
-      personId: '',
       title: '',
       photo: '',
       description: '',
-      content: '',
-      createdAt: new Date().toISOString()
+      content: ''
     });
     onClose();
   };
@@ -154,33 +105,9 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
             overflowY: 'auto',
             paddingRight: '0.5rem'
           }}>
-            {/* Выбор автора */}
-            <div style={STYLES.formGroup}>
-              <label style={STYLES.label}>Автор статьи:</label>
-              <select
-                value={formData.personId}
-                onChange={(e) => setFormData(prev => ({ ...prev, personId: e.target.value }))}
-                style={{
-                  ...STYLES.input,
-                  cursor: 'pointer'
-                }}
-                required
-              >
-                <option value="">Выберите автора</option>
-                {allPersons.map((person, index) => {
-                  const displayName = person.isSpouse 
-                    ? `${person.name} (супруг${person.name.endsWith('а') || person.name.endsWith('я') ? 'а' : ''})`
-                    : person.name;
-                  
-                  return (
-                    <option key={`${person.id}-${person.type}-${index}`} value={person.id}>
-                      {displayName}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-
+            
+            {/* УБРАНО: Выбор автора */}
+            
             {/* Название */}
             <div style={STYLES.formGroup}>
               <label style={STYLES.label}>Название статьи:</label>
@@ -194,16 +121,7 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
               />
             </div>
 
-            {/* НОВОЕ: Дата создания */}
-            <div style={STYLES.formGroup}>
-              <label style={STYLES.label}>Дата создания:</label>
-              <input
-                type="datetime-local"
-                value={formatDateForInput(formData.createdAt)}
-                onChange={(e) => setFormData(prev => ({ ...prev, createdAt: new Date(e.target.value).toISOString() }))}
-                style={STYLES.input}
-              />
-            </div>
+            {/* УБРАНО: Дата создания */}
 
             {/* Фотография */}
             <PhotoUpload
@@ -260,12 +178,12 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.personId || !formData.title.trim()}
+              disabled={loading || !formData.title.trim()}
               style={{
                 ...STYLES.button,
                 ...STYLES.greenButton,
-                opacity: (loading || !formData.personId || !formData.title.trim()) ? 0.5 : 1,
-                cursor: (loading || !formData.personId || !formData.title.trim()) ? 'not-allowed' : 'pointer',
+                opacity: (loading || !formData.title.trim()) ? 0.5 : 1,
+                cursor: (loading || !formData.title.trim()) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'
@@ -294,6 +212,28 @@ const CreateArticleModal = ({ isOpen, onClose, onCreate, familyData }) => {
             </button>
           </div>
         </form>
+
+        {/* НОВОЕ: Пояснение */}
+        <div style={{
+          backgroundColor: '#ffffffc3',
+          border: '1px solid #c0a282',
+          borderRadius: '0.5rem',
+          padding: '0.75rem',
+          marginTop: '1rem',
+          fontSize: '0.875rem',
+          color: '#c0a282',
+          fontFamily: 'Montserrat, sans-serif',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
+            <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+          </svg>
+          После создания статьи вы сможете привязать её к нужным персонам через их карточки в семейном древе
+        </div>
       </div>
     </div>
   );

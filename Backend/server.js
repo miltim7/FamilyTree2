@@ -84,18 +84,17 @@ const initializeData = async () => {
             console.log('Создан файл данных по умолчанию');
         }
 
-        // Инициализация файла статей
+        // ОБНОВЛЕННАЯ инициализация файла статей - БЕЗ ПРИВЯЗКИ К АВТОРУ
         const articlesExists = await fs.pathExists(ARTICLES_FILE);
         if (!articlesExists) {
             const defaultArticles = [
                 {
                     id: uuidv4(),
-                    personId: "root-1",
-                    personName: "Основатель рода Шуховцевых",
                     title: "История семьи Шуховцевых-Шеховцевых",
                     photo: "https://images.unsplash.com/photo-1516571748831-5d81767b788d?w=400&h=300&fit=crop",
                     description: "Первая статья о истории нашей семьи",
                     content: "Здесь будет размещена подробная история семьи Шуховцевых-Шеховцевых, их происхождения, традиций и важных событий.",
+                    linkedPersons: [], // НОВОЕ: массив ID связанных персон
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 }
@@ -107,8 +106,6 @@ const initializeData = async () => {
         console.error('Ошибка инициализации:', error);
     }
 };
-
-// (все ваши API routes, утилиты и функции остаются точно такими же)
 
 // Утилиты для работы с данными
 const readFamilyData = async () => {
@@ -499,7 +496,7 @@ app.delete('/api/family/person/:personId', async (req, res) => {
     }
 });
 
-// СТАТЬИ API ROUTES
+// СТАТЬИ API ROUTES - ОБНОВЛЕННЫЕ
 
 // Получить все статьи
 app.get('/api/articles', async (req, res) => {
@@ -518,12 +515,16 @@ app.get('/api/articles', async (req, res) => {
     }
 });
 
-// Получить статьи конкретной персоны
-app.get('/api/articles/person/:personId', async (req, res) => {
+// НОВЫЙ ENDPOINT: Получить статьи конкретной персоны
+app.get('/api/family/person/:personId/articles', async (req, res) => {
     try {
         const { personId } = req.params;
         const articles = await readArticlesData();
-        const personArticles = articles.filter(article => article.personId === personId);
+        
+        // Фильтруем статьи, которые связаны с данной персоной
+        const personArticles = articles.filter(article => 
+            article.linkedPersons && article.linkedPersons.includes(personId)
+        );
         
         res.json({
             success: true,
@@ -565,25 +566,15 @@ app.get('/api/articles/:articleId', async (req, res) => {
     }
 });
 
-// Создать новую статью
+// ОБНОВЛЕННЫЙ ENDPOINT: Создать новую статью БЕЗ ПРИВЯЗКИ К ПЕРСОНЕ
 app.post('/api/articles', async (req, res) => {
     try {
-        const { personId, title, photo, description, content } = req.body;
+        const { title, photo, description, content } = req.body;
         
-        if (!personId || !title?.trim()) {
+        if (!title?.trim()) {
             return res.status(400).json({
                 success: false,
-                message: 'Не указана персона или название статьи'
-            });
-        }
-        
-        const familyData = await readFamilyData();
-        const person = findPersonById(familyData, personId);
-        
-        if (!person) {
-            return res.status(404).json({
-                success: false,
-                message: 'Персона не найдена'
+                message: 'Не указано название статьи'
             });
         }
         
@@ -591,12 +582,11 @@ app.post('/api/articles', async (req, res) => {
         
         const newArticle = {
             id: uuidv4(),
-            personId: personId,
-            personName: person.name,
             title: title.trim(),
             photo: photo || null,
             description: description || '',
             content: content || '',
+            linkedPersons: [], // НОВОЕ: пустой массив связанных персон
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
@@ -619,12 +609,11 @@ app.post('/api/articles', async (req, res) => {
     }
 });
 
-// Обновить статью
-// Обновить статью
+// ОБНОВЛЕННЫЙ ENDPOINT: Обновить статью БЕЗ ИЗМЕНЕНИЯ СВЯЗЕЙ
 app.put('/api/articles/:articleId', async (req, res) => {
     try {
         const { articleId } = req.params;
-        const { title, photo, description, content, personId, createdAt } = req.body;
+        const { title, photo, description, content } = req.body;
         
         if (!title?.trim()) {
             return res.status(400).json({
@@ -642,22 +631,6 @@ app.put('/api/articles/:articleId', async (req, res) => {
                 message: 'Статья не найдена'
             });
         }
-
-        // НОВОЕ: Если изменяется автор, проверяем что персона существует
-        let personName = articles[articleIndex].personName;
-        if (personId && personId !== articles[articleIndex].personId) {
-            const familyData = await readFamilyData();
-            const person = findPersonById(familyData, personId);
-            
-            if (!person) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Новый автор не найден в семейном древе'
-                });
-            }
-            
-            personName = person.name;
-        }
         
         articles[articleIndex] = {
             ...articles[articleIndex],
@@ -665,11 +638,8 @@ app.put('/api/articles/:articleId', async (req, res) => {
             photo: photo || null,
             description: description || '',
             content: content || '',
-            // НОВОЕ: Обновляем автора если указан
-            ...(personId && { personId: personId, personName: personName }),
-            // НОВОЕ: Обновляем дату создания если указана
-            ...(createdAt && { createdAt: createdAt }),
             updatedAt: new Date().toISOString()
+            // linkedPersons остается без изменений
         };
         
         await writeArticlesData(articles);
@@ -685,6 +655,112 @@ app.put('/api/articles/:articleId', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Ошибка сервера при обновлении статьи'
+        });
+    }
+});
+
+// НОВЫЙ ENDPOINT: Привязать статью к персоне
+app.post('/api/articles/:articleId/link-person/:personId', async (req, res) => {
+    try {
+        const { articleId, personId } = req.params;
+        
+        // Проверяем что персона существует
+        const familyData = await readFamilyData();
+        const person = findPersonById(familyData, personId);
+        
+        if (!person) {
+            return res.status(404).json({
+                success: false,
+                message: 'Персона не найдена'
+            });
+        }
+        
+        const articles = await readArticlesData();
+        const articleIndex = articles.findIndex(a => a.id === articleId);
+        
+        if (articleIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Статья не найдена'
+            });
+        }
+        
+        const article = articles[articleIndex];
+        
+        // Проверяем что персона еще не привязана
+        if (!article.linkedPersons) {
+            article.linkedPersons = [];
+        }
+        
+        if (article.linkedPersons.includes(personId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Персона уже привязана к этой статье'
+            });
+        }
+        
+        // Добавляем персону к статье
+        article.linkedPersons.push(personId);
+        article.updatedAt = new Date().toISOString();
+        
+        await writeArticlesData(articles);
+        
+        res.json({
+            success: true,
+            message: 'Статья успешно привязана к персоне',
+            data: article
+        });
+        
+    } catch (error) {
+        console.error('Ошибка привязки статьи:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при привязке статьи'
+        });
+    }
+});
+
+// НОВЫЙ ENDPOINT: Отвязать статью от персоны
+app.delete('/api/articles/:articleId/unlink-person/:personId', async (req, res) => {
+    try {
+        const { articleId, personId } = req.params;
+        
+        const articles = await readArticlesData();
+        const articleIndex = articles.findIndex(a => a.id === articleId);
+        
+        if (articleIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Статья не найдена'
+            });
+        }
+        
+        const article = articles[articleIndex];
+        
+        if (!article.linkedPersons || !article.linkedPersons.includes(personId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Персона не привязана к этой статье'
+            });
+        }
+        
+        // Удаляем персону из статьи
+        article.linkedPersons = article.linkedPersons.filter(id => id !== personId);
+        article.updatedAt = new Date().toISOString();
+        
+        await writeArticlesData(articles);
+        
+        res.json({
+            success: true,
+            message: 'Статья отвязана от персоны',
+            data: article
+        });
+        
+    } catch (error) {
+        console.error('Ошибка отвязки статьи:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера при отвязке статьи'
         });
     }
 });

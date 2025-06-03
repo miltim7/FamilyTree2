@@ -231,14 +231,7 @@ const RecentArticles = ({ articles, loading }) => {
                   {article.title}
                 </h4>
                 
-                <p style={{
-                  fontSize: '0.8rem',
-                  color: '#c0a282',
-                  marginBottom: '0.5rem',
-                  fontFamily: 'Montserrat, sans-serif'
-                }}>
-                  Автор: {article.personName}
-                </p>
+                {/* УБРАНО: отображение автора */}
                 
                 {article.description && (
                   <p style={{
@@ -255,7 +248,7 @@ const RecentArticles = ({ articles, loading }) => {
                   </p>
                 )}
                 
-                {/* УДАЛЕНО: блок с датой создания */}
+                {/* УБРАНО: блок с датой создания */}
               </div>
             </div>
           ))}

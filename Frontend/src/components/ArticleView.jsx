@@ -25,54 +25,13 @@ const ArticleView = () => {
     title: '',
     photo: '',
     description: '',
-    content: '',
-    // НОВОЕ: Добавляем поля для автора и даты
-    personId: '',
-    createdAt: ''
+    content: ''
+    // УБРАНО: personId и createdAt - больше не редактируем через статью
   });
   const [saving, setSaving] = useState(false);
 
-  // НОВОЕ: Получаем список всех персон для выбора автора
-  const getAllPersons = (node, persons = []) => {
-    if (!node) return persons;
-    
-    persons.push({
-      id: node.id,
-      name: node.name,
-      type: 'person'
-    });
-    
-    if (node.spouse) {
-      persons.push({
-        id: node.id,
-        name: node.spouse.name,
-        type: 'spouse',
-        isSpouse: true
-      });
-    }
-    
-    if (node.children && Array.isArray(node.children)) {
-      node.children.forEach(child => {
-        getAllPersons(child, persons);
-      });
-    }
-    
-    return persons;
-  };
-
-  const allPersons = familyData ? getAllPersons(familyData) : [];
-
-  // НОВОЕ: Форматирование даты для input type="datetime-local"
-  const formatDateForInput = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
+  // НОВОЕ: Состояние для связанных персон
+  const [linkedPersons, setLinkedPersons] = useState([]);
 
   // Загрузка данных при инициализации
   useEffect(() => {
@@ -105,11 +64,18 @@ const ArticleView = () => {
         title: articleData.title || '',
         photo: articleData.photo || '',
         description: articleData.description || '',
-        content: articleData.content || '',
-        // НОВОЕ: Устанавливаем автора и дату создания
-        personId: articleData.personId || '',
-        createdAt: articleData.createdAt || ''
+        content: articleData.content || ''
+        // УБРАНО: personId и createdAt
       });
+      
+      // НОВОЕ: Получаем данные связанных персон
+      if (articleData.linkedPersons && familyTreeData) {
+        const personsData = articleData.linkedPersons.map(personId => {
+          const person = findPersonById(familyTreeData, personId);
+          return person ? { id: personId, ...person } : null;
+        }).filter(Boolean);
+        setLinkedPersons(personsData);
+      }
       
     } catch (error) {
       console.error('Ошибка загрузки статьи:', error);
@@ -128,28 +94,21 @@ const ArticleView = () => {
     setIsEditing(true);
   };
 
+  // ОБНОВЛЕННАЯ функция сохранения БЕЗ АВТОРА И ДАТЫ
   const handleSave = async () => {
     if (!editData.title.trim()) {
       showNotification('Название статьи не может быть пустым');
       return;
     }
 
-    // НОВОЕ: Проверяем что автор выбран
-    if (!editData.personId) {
-      showNotification('Выберите автора статьи');
-      return;
-    }
-
     setSaving(true);
     try {
-      // НОВОЕ: Передаем все новые поля включая personId и createdAt
       const result = await articlesAPI.updateArticle(articleId, {
         title: editData.title,
         photo: editData.photo,
         description: editData.description,
-        content: editData.content,
-        personId: editData.personId,
-        createdAt: editData.createdAt
+        content: editData.content
+        // УБРАНО: personId и createdAt
       });
       
       if (result.success) {
@@ -172,15 +131,13 @@ const ArticleView = () => {
       title: article.title || '',
       photo: article.photo || '',
       description: article.description || '',
-      content: article.content || '',
-      personId: article.personId || '',
-      createdAt: article.createdAt || ''
+      content: article.content || ''
     });
     setIsEditing(false);
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Вы уверены, что хотите удалить эту статью?')) {
+    if (!window.confirm('Вы уверены, что хотите удалить эту статью? Она будет отвязана от всех персон.')) {
       return;
     }
 
@@ -209,6 +166,11 @@ const ArticleView = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // НОВАЯ ФУНКЦИЯ: Переход к персоне в семейном древе
+  const handlePersonClick = (personId) => {
+    navigate(`/?person=${personId}`);
   };
 
   if (loading) {
@@ -285,8 +247,6 @@ const ArticleView = () => {
       </div>
     );
   }
-
-  const person = findPersonById(familyData, article.personId);
 
   return (
     <div style={STYLES.container}>
@@ -382,73 +342,9 @@ const ArticleView = () => {
             </h1>
           )}
           
-          {/* НОВОЕ: Поля автора и даты в режиме редактирования */}
-          {isEditing && (
-            <div style={{ marginBottom: '1rem' }}>
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: '1fr 1fr', 
-                gap: '1rem',
-                marginBottom: '1rem'
-              }}>
-                {/* Выбор автора */}
-                <div>
-                  <label style={{
-                    ...STYLES.label,
-                    fontSize: '0.875rem',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Автор статьи:
-                  </label>
-                  <select
-                    value={editData.personId}
-                    onChange={(e) => setEditData(prev => ({ ...prev, personId: e.target.value }))}
-                    style={{
-                      ...STYLES.input,
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                    required
-                  >
-                    <option value="">Выберите автора</option>
-                    {allPersons.map((person, index) => {
-                      const displayName = person.isSpouse 
-                        ? `${person.name} (супруг${person.name.endsWith('а') || person.name.endsWith('я') ? 'а' : ''})`
-                        : person.name;
-                      
-                      return (
-                        <option key={`${person.id}-${person.type}-${index}`} value={person.id}>
-                          {displayName}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-
-                {/* Дата создания */}
-                <div>
-                  <label style={{
-                    ...STYLES.label,
-                    fontSize: '0.875rem',
-                    marginBottom: '0.5rem'
-                  }}>
-                    Дата создания:
-                  </label>
-                  <input
-                    type="datetime-local"
-                    value={formatDateForInput(editData.createdAt)}
-                    onChange={(e) => setEditData(prev => ({ ...prev, createdAt: new Date(e.target.value).toISOString() }))}
-                    style={{
-                      ...STYLES.input,
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
+          {/* УБРАНО: Поля автора и даты в режиме редактирования */}
           
-          {/* Метаинформация */}
+          {/* ОБНОВЛЕННАЯ Метаинформация */}
           <div style={{
             display: 'flex',
             flexWrap: 'wrap',
@@ -458,12 +354,20 @@ const ArticleView = () => {
             fontFamily: 'Montserrat, sans-serif',
             marginBottom: '1rem'
           }}>
+            {/* НОВОЕ: Отображение связанных персон */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span>Автор: {person ? person.name : article.personName}</span>
+              <span>
+                {linkedPersons.length > 0 
+                  ? `Связана с ${linkedPersons.length} персон${linkedPersons.length === 1 ? 'ой' : 'ами'}` 
+                  : 'Не связана с персонами'
+                }
+              </span>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -486,6 +390,62 @@ const ArticleView = () => {
               </div>
             )}
           </div>
+
+          {/* НОВЫЙ БЛОК: Связанные персоны */}
+          {linkedPersons.length > 0 && (
+            <div style={{
+              backgroundColor: '#ffffffc3',
+              border: '1px solid #e0e0e0',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              marginBottom: '1rem'
+            }}>
+              <h4 style={{
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                color: '#303133',
+                marginBottom: '0.75rem',
+                fontFamily: 'Montserrat, sans-serif'
+              }}>
+                Связанные персоны:
+              </h4>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.5rem'
+              }}>
+                {linkedPersons.map(person => (
+                  <button
+                    key={person.id}
+                    onClick={() => handlePersonClick(person.id)}
+                    style={{
+                      backgroundColor: '#c0a282',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.8rem',
+                      fontWeight: '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'Montserrat, sans-serif',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#a08966'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = '#c0a282'}
+                    title={`Перейти к ${person.name} в семейном древе`}
+                  >
+                    {person.name}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M7 17l9.2-9.2M17 17V7H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Кнопки действий */}
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -756,6 +716,39 @@ const ArticleView = () => {
               </div>
             )}
           </div>
+
+          {/* НОВОЕ: Подсказка для связывания статей */}
+          {!isEditing && linkedPersons.length === 0 && (
+            <div style={{
+              backgroundColor: '#ffffffc3',
+              border: '2px dashed #c0a282',
+              borderRadius: '0.75rem',
+              padding: '1.5rem',
+              marginTop: '2rem',
+              textAlign: 'center',
+              color: '#c0a282'
+            }}>
+              <div style={{
+                fontSize: '32px',
+                marginBottom: '0.5rem',
+                opacity: 0.7
+              }}>
+                🔗
+              </div>
+              <p style={{
+                fontSize: '0.9rem',
+                fontFamily: 'Montserrat, sans-serif',
+                margin: 0,
+                lineHeight: '1.5'
+              }}>
+                Эта статья пока не связана с персонами.<br/>
+                {isAuthenticated 
+                  ? 'Перейдите к карточке персоны в семейном древе и привяжите эту статью.'
+                  : 'Для управления связями требуется авторизация.'
+                }
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -773,7 +766,8 @@ const ArticleView = () => {
           opacity: 1,
           transition: 'opacity 0.3s ease',
           backgroundColor: notification.type === 'success' ? '#c0a282' : '#303133',
-          fontFamily: 'Montserrat, sans-serif'
+          fontFamily: 'Montserrat, sans-serif',
+          maxWidth: '400px'
         }}>
           {notification.message}
         </div>

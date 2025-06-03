@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import articlesAPI from '../services/articlesApi';
-import familyTreeAPI from '../services/api';
 import { STYLES } from '../constants/treeConstants';
 import ArticleCard from './ArticleCard';
 import CreateArticleModal from './CreateArticleModal';
@@ -13,7 +12,6 @@ const ArticlesPage = () => {
   const { isAuthenticated } = useAuth();
   
   const [articles, setArticles] = useState([]);
-  const [familyData, setFamilyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null);
@@ -41,14 +39,10 @@ const ArticlesPage = () => {
       setLoading(true);
       setError(null);
       
-      // Загружаем статьи и семейные данные параллельно
-      const [articlesData, familyTreeData] = await Promise.all([
-        articlesAPI.getAllArticles(),
-        familyTreeAPI.getFamilyData()
-      ]);
+      // ОБНОВЛЕНО: Загружаем только статьи (семейные данные больше не нужны)
+      const articlesData = await articlesAPI.getAllArticles();
       
       setArticles(articlesData);
-      setFamilyData(familyTreeData);
       
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
@@ -63,13 +57,14 @@ const ArticlesPage = () => {
     setNotification({ message, type });
   };
 
+  // ОБНОВЛЕННЫЙ обработчик создания статьи БЕЗ АВТОРА
   const handleCreateArticle = async (articleData) => {
     try {
       const result = await articlesAPI.createArticle(articleData);
       
       if (result.success) {
         setArticles(prev => [...prev, result.data]);
-        showNotification('Статья успешно создана!', 'success');
+        showNotification('Статья успешно создана! Теперь вы можете привязать её к персонам через их карточки в семейном древе.', 'success');
         setCreateModalOpen(false);
       } else {
         showNotification(result.message);
@@ -202,7 +197,7 @@ const ArticlesPage = () => {
             fontFamily: 'Montserrat, sans-serif'
           }}>
             {isAuthenticated 
-              ? 'Создайте первую статью для сохранения истории вашей семьи'
+              ? 'Создайте первую статью. После создания вы сможете привязать её к нужным персонам.'
               : 'Для создания статей требуется авторизация'
             }
           </p>
@@ -261,13 +256,12 @@ const ArticlesPage = () => {
         </div>
       )}
 
-      {/* ОБНОВЛЕННОЕ модальное окно создания статьи - только для авторизованных */}
+      {/* ОБНОВЛЕННОЕ модальное окно создания статьи БЕЗ FAMILYDATA */}
       {isAuthenticated && createModalOpen && (
         <CreateArticleModal
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
           onCreate={handleCreateArticle}
-          familyData={familyData}
         />
       )}
 
@@ -285,7 +279,8 @@ const ArticlesPage = () => {
           opacity: 1,
           transition: 'opacity 0.3s ease',
           backgroundColor: notification.type === 'success' ? '#c0a282' : '#303133',
-          fontFamily: 'Montserrat, sans-serif'
+          fontFamily: 'Montserrat, sans-serif',
+          maxWidth: '400px'
         }}>
           {notification.message}
         </div>
