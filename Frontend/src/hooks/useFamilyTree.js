@@ -6,6 +6,7 @@ import familyTreeAPI from '../services/api';
 import articlesAPI from '../services/articlesApi';
 import { getDefaultPhoto } from '../utils/familyUtils';
 
+
 export const useFamilyTree = () => {
   // Основное состояние
   const [familyData, setFamilyData] = useState(null);
@@ -95,31 +96,35 @@ export const useFamilyTree = () => {
   }, []);
 
   // Загрузка данных с сервера
-  const loadFamilyData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Проверяем подключение к серверу
-      const serverHealth = await familyTreeAPI.checkServerHealth();
-      setIsServerConnected(serverHealth);
-      
-      if (!serverHealth) {
-        throw new Error('Сервер недоступен. Проверьте подключение.');
-      }
-      
-      const data = await familyTreeAPI.getFamilyData();
-      setFamilyData(data);
-      
-    } catch (error) {
-      console.error('Ошибка загрузки данных:', error);
-      setError(error.message);
-      setIsServerConnected(false);
-      showNotification(`Ошибка загрузки: ${error.message}`);
-    } finally {
-      setLoading(false);
+  // Загрузка данных с сервера
+const loadFamilyData = useCallback(async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    // Проверяем подключение к серверу
+    const serverHealth = await familyTreeAPI.checkServerHealth();
+    setIsServerConnected(serverHealth);
+    
+    if (!serverHealth) {
+      throw new Error('Сервер недоступен. Проверьте подключение.');
     }
-  }, []);
+    
+    const data = await familyTreeAPI.getFamilyData();
+    setFamilyData(data);
+    
+    // ДОБАВЬТЕ ЭТУ СТРОКУ ЗДЕСЬ:
+    window.familyData = data; // Для доступа из модалов
+    
+  } catch (error) {
+    console.error('Ошибка загрузки данных:', error);
+    setError(error.message);
+    setIsServerConnected(false);
+    showNotification(`Ошибка загрузки: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   // Загрузка последних статей
   const loadRecentArticles = useCallback(async () => {

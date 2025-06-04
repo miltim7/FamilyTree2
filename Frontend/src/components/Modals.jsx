@@ -1,5 +1,4 @@
 // Frontend\src\components\Modals.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { STYLES, NODE_STYLES } from '../constants/treeConstants';
@@ -7,20 +6,79 @@ import PhotoUpload from './PhotoUpload';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import articlesAPI from '../services/articlesApi';
 
+// НОВАЯ ФУНКЦИЯ: Поиск персоны по ID (используется для поиска основной персоны по ID супруга)
+const findPersonById = (root, targetId) => {
+  if (!root || !targetId) return null;
+
+  const normalizedId = targetId.replace(/-spouse$/, '');
+
+  if (root.id === normalizedId) {
+    return root;
+  }
+
+  if (root.children && Array.isArray(root.children)) {
+    for (const child of root.children) {
+      if (!child) continue;
+      const found = findPersonById(child, normalizedId);
+      if (found) return found;
+    }
+  }
+
+  return null;
+};
+
+// НОВАЯ ФУНКЦИЯ: Поиск родителей персоны
+const findParents = (familyData, targetPersonId) => {
+  const searchInNode = (node) => {
+    if (!node || !node.children) return null;
+
+    // Проверяем, есть ли целевая персона среди детей этого узла
+    for (const child of node.children) {
+      if (child && child.id === targetPersonId) {
+        // Нашли родителей - возвращаем основную персону и супруга
+        const parents = [node];
+        if (node.spouse) {
+          parents.push({ ...node.spouse, id: `${node.id}-spouse` });
+        }
+        return parents;
+      }
+    }
+
+    // Рекурсивно ищем в детях
+    for (const child of node.children) {
+      if (child) {
+        const found = searchInNode(child);
+        if (found) return found;
+      }
+    }
+
+    return null;
+  };
+
+  return searchInNode(familyData) || [];
+};
+
 // Модальное окно с информацией о персоне
 export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthenticated }) => {
   const navigate = useNavigate();
-  
+
   // НОВОЕ: Состояние для управления статьями
   const [allArticles, setAllArticles] = useState([]);
   const [personArticles, setPersonArticles] = useState([]);
   const [availableArticles, setAvailableArticles] = useState([]);
   const [showArticleSelector, setShowArticleSelector] = useState(false);
   const [articlesLoading, setArticlesLoading] = useState(false);
-  
+
+  // НОВОЕ: Состояние для семейных связей
+  const [familyRelations, setFamilyRelations] = useState({
+    parents: [],
+    spouse: null,
+    children: []
+  });
+
   // Блокируем скролл страницы при открытии модального окна
   useBodyScrollLock(modal.isOpen);
-  
+
   // НОВОЕ: Загружаем статьи при открытии модала персоны (не супруга)
   useEffect(() => {
     if (modal.isOpen && modal.personId && !modal.isSpouse) {
@@ -28,25 +86,81 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
     }
   }, [modal.isOpen, modal.personId, modal.isSpouse]);
 
+  // НОВОЕ: Загружаем семейные связи при открытии модала
+  useEffect(() => {
+    if (modal.isOpen && modal.personId && modal.person) {
+      loadFamilyRelations();
+    }
+  }, [modal.isOpen, modal.personId, modal.person]);
+
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ: Загрузка семейных связей
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ: Загрузка семейных связей
+const loadFamilyRelations = () => {
+  if (!modal.person || !window.familyData) return;
+
+  const relations = {
+    parents: [],
+    spouse: null,
+    children: []
+  };
+
+  if (modal.isSpouse) {
+    // ИСПРАВЛЕНО: Для супругов
+    const mainPersonId = modal.personId; // ID основной персоны
+    const mainPerson = findPersonById(window.familyData, mainPersonId);
+    
+    if (mainPerson) {
+      // Супруг основной персоны
+      relations.spouse = mainPerson;
+      
+      // УБРАНО: Родители супруга (свёкра не показываем!)
+      // relations.parents = []; // Остается пустым
+      
+      // Дети супруга = дети основной персоны (общие дети)
+      if (mainPerson.children && mainPerson.children.length > 0) {
+        relations.children = mainPerson.children;
+      }
+    }
+  } else {
+    // Для основных персон (как было)
+    
+    // Получаем родителей
+    const parents = findParents(window.familyData, modal.personId);
+    relations.parents = parents;
+
+    // Получаем супруга
+    if (modal.person.spouse) {
+      relations.spouse = modal.person.spouse;
+    }
+
+    // Получаем детей
+    if (modal.person.children && modal.person.children.length > 0) {
+      relations.children = modal.person.children;
+    }
+  }
+
+  setFamilyRelations(relations);
+};
+
   // НОВАЯ ФУНКЦИЯ: Загрузка всех статей и статей персоны
   const loadArticlesData = async () => {
     try {
       setArticlesLoading(true);
-      
+
       // Загружаем все статьи и статьи персоны параллельно
       const [allArticlesData, personArticlesData] = await Promise.all([
         articlesAPI.getAllArticles(),
         articlesAPI.getPersonArticles(modal.personId)
       ]);
-      
+
       setAllArticles(allArticlesData);
       setPersonArticles(personArticlesData);
-      
+
       // Фильтруем доступные статьи (те, что еще не привязаны к этой персоне)
       const linkedArticleIds = personArticlesData.map(article => article.id);
       const available = allArticlesData.filter(article => !linkedArticleIds.includes(article.id));
       setAvailableArticles(available);
-      
+
     } catch (error) {
       console.error('Ошибка загрузки статей:', error);
     } finally {
@@ -58,7 +172,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
   const handleLinkArticle = async (articleId) => {
     try {
       const result = await articlesAPI.linkArticleToPerson(articleId, modal.personId);
-      
+
       if (result.success) {
         await loadArticlesData(); // Перезагружаем данные
         setShowArticleSelector(false);
@@ -74,10 +188,10 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
     if (!window.confirm('Отвязать эту статью от персоны?')) {
       return;
     }
-    
+
     try {
       const result = await articlesAPI.unlinkArticleFromPerson(articleId, modal.personId);
-      
+
       if (result.success) {
         await loadArticlesData(); // Перезагружаем данные
       }
@@ -86,7 +200,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
       alert('Ошибка при отвязке статьи');
     }
   };
-  
+
   if (!modal.isOpen || !modal.person) return null;
 
   const canDelete = modal.personId !== 'root-1'; // Нельзя удалить основателя
@@ -120,7 +234,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
         fontFamily: 'Montserrat, sans-serif',
         position: 'relative',
       }}>
-        
+
         {/* Заголовок */}
         <div style={{
           padding: '2rem 2rem 1rem 2rem',
@@ -193,12 +307,12 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                 onMouseLeave={(e) => e.target.style.backgroundColor = '#c0a282'}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 Редактировать
               </button>
-              
+
               {canDelete && (
                 <button
                   onClick={() => onDelete(modal.personId, modal.isSpouse)}
@@ -221,8 +335,8 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                   onMouseLeave={(e) => e.target.style.backgroundColor = '#303133'}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   Удалить
                 </button>
@@ -245,9 +359,9 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
               gap: '0.5rem'
             }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
-                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2"/>
-                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2"/>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" />
+                <line x1="12" y1="16" x2="12.01" y2="16" stroke="currentColor" strokeWidth="2" />
               </svg>
               Для редактирования требуется авторизация
             </div>
@@ -260,7 +374,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
           overflowY: 'auto',
           padding: '2rem'
         }}>
-          
+
           {/* Основная информация */}
           <div style={{
             display: 'flex',
@@ -300,7 +414,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                 </div>
               )}
             </div>
-            
+
             {/* Основные данные */}
             <div style={{ flex: 1, minWidth: '300px' }}>
               <h3 style={{
@@ -312,7 +426,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
               }}>
                 {modal.person.name || 'Имя не указано'}
               </h3>
-              
+
               <div style={{ display: 'grid', gap: '0.75rem' }}>
                 <div>
                   <span style={{
@@ -330,7 +444,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                     {modal.person.gender === 'male' ? 'Мужской' : 'Женский'}
                   </span>
                 </div>
-                
+
                 <div>
                   <span style={{
                     fontSize: '0.9rem',
@@ -347,7 +461,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                     {modal.person.lifeYears || 'Не указаны'}
                   </span>
                 </div>
-                
+
                 <div>
                   <span style={{
                     fontSize: '0.9rem',
@@ -364,7 +478,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                     {modal.person.profession || 'Не указана'}
                   </span>
                 </div>
-                
+
                 <div>
                   <span style={{
                     fontSize: '0.9rem',
@@ -382,6 +496,144 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                   </span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* НОВЫЙ БЛОК: Семейные связи */}
+          <div style={{ marginBottom: '2rem' }}>
+            <h4 style={{
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              color: '#303133',
+              marginBottom: '1rem',
+              fontFamily: 'Montserrat, sans-serif',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 4l2.586 2.586a2 2 0 010 2.828L8.343 19.657a2 2 0 01-1.414.586H4a1 1 0 01-1-1v-2.929a2 2 0 01.586-1.414L13.829 4.172a2 2 0 012.828 0L16 4z" stroke="currentColor" strokeWidth="2" />
+              </svg>
+              Семейные связи
+            </h4>
+
+            <div style={{
+              backgroundColor: '#ffffffc3',
+              padding: '1.25rem',
+              borderRadius: '0.75rem',
+              border: '1px solid #e0e0e0',
+              display: 'grid',
+              gap: '1rem'
+            }}>
+
+              {/* Родители */}
+              {familyRelations.parents.length > 0 && (
+                <div>
+                  <span style={{
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    color: '#c0a282',
+                    fontFamily: 'Montserrat, sans-serif'
+                  }}>Родители:</span>
+                  <div style={{
+                    marginTop: '0.5rem',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem'
+                  }}>
+                    {familyRelations.parents.map((parent, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          backgroundColor: '#c0a282',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.25rem',
+                          fontSize: '0.85rem',
+                          fontFamily: 'Montserrat, sans-serif'
+                        }}
+                      >
+                        {parent.name || 'Без имени'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Супруг */}
+              {familyRelations.spouse && (
+                <div>
+                  <span style={{
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    color: '#c0a282',
+                    fontFamily: 'Montserrat, sans-serif'
+                  }}>Супруг(-а):</span>
+                  <div style={{
+                    marginTop: '0.5rem'
+                  }}>
+                    <span style={{
+                      backgroundColor: '#c0a282',
+                      color: 'white',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.85rem',
+                      fontFamily: 'Montserrat, sans-serif'
+                    }}>
+                      {familyRelations.spouse.name || 'Без имени'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Дети */}
+              {familyRelations.children.length > 0 && (
+                <div>
+                  <span style={{
+                    fontSize: '0.9rem',
+                    fontWeight: '600',
+                    color: '#c0a282',
+                    fontFamily: 'Montserrat, sans-serif'
+                  }}>Дети ({familyRelations.children.length}):</span>
+                  <div style={{
+                    marginTop: '0.5rem',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem'
+                  }}>
+                    {familyRelations.children.map((child, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          backgroundColor: '#c0a282',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.25rem',
+                          fontSize: '0.85rem',
+                          fontFamily: 'Montserrat, sans-serif'
+                        }}
+                      >
+                        {child.name || 'Без имени'}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Если нет семейных связей */}
+              {familyRelations.parents.length === 0 &&
+                !familyRelations.spouse &&
+                familyRelations.children.length === 0 && (
+                  <div style={{
+                    textAlign: 'center',
+                    color: '#666',
+                    fontSize: '0.9rem',
+                    fontFamily: 'Montserrat, sans-serif',
+                    fontStyle: 'italic'
+                  }}>
+                    Семейные связи не указаны
+                  </div>
+                )}
             </div>
           </div>
 
@@ -432,10 +684,10 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                   margin: 0
                 }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <polyline points="14,2 14,8 20,8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                   Статьи ({personArticles.length})
                 </h4>
@@ -463,7 +715,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                     onMouseLeave={(e) => e.target.style.backgroundColor = '#c0a282'}
                   >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     Добавить статью
                   </button>
@@ -555,15 +807,15 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                               fontFamily: 'Montserrat, sans-serif',
                               marginTop: '0.25rem'
                             }}>
-                              {article.description.length > 60 
-                                ? `${article.description.slice(0, 60)}...` 
+                              {article.description.length > 60
+                                ? `${article.description.slice(0, 60)}...`
                                 : article.description
                               }
                             </div>
                           )}
                         </div>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 6v12M6 12h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     ))}
@@ -677,7 +929,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                         }}>
                           {article.title}
                         </h5>
-                        
+
                         {article.description && (
                           <p style={{
                             fontSize: '0.85rem',
@@ -692,7 +944,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                             {article.description}
                           </p>
                         )}
-                        
+
                         <div style={{
                           fontSize: '0.75rem',
                           color: '#999',
@@ -744,7 +996,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                         alignItems: 'center'
                       }}>
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     </div>
@@ -814,7 +1066,7 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
                 margin: 0,
                 lineHeight: '1.5'
               }}>
-                Статьи привязываются только к основным персонам семейного древа.<br/>
+                Статьи привязываются только к основным персонам семейного древа.<br />
                 Супруги могут иметь свою информацию, но статьи управляются через основную персону.
               </p>
             </div>
@@ -825,16 +1077,19 @@ export const PersonInfoModal = ({ modal, onClose, onEdit, onDelete, isAuthentica
   );
 };
 
+// Остальные модальные окна остаются без изменений...
+// [EditPersonModal, AddSpouseModal, AddChildModal - без изменений]
+
 // Модальное окно редактирования персоны
-export const EditPersonModal = ({ 
-  modal, 
-  onModalChange, 
-  onClose, 
-  onConfirm 
+export const EditPersonModal = ({
+  modal,
+  onModalChange,
+  onClose,
+  onConfirm
 }) => {
   // Блокируем скролл страницы при открытии модального окна
   useBodyScrollLock(modal.isOpen);
-  
+
   if (!modal.isOpen) return null;
 
   return (
@@ -851,7 +1106,7 @@ export const EditPersonModal = ({
             ×
           </button>
         </h2>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>ФИО:</label>
           <input
@@ -862,7 +1117,7 @@ export const EditPersonModal = ({
             placeholder="Введите полное имя"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Пол:</label>
           <div style={STYLES.radioGroup}>
@@ -888,13 +1143,13 @@ export const EditPersonModal = ({
             </label>
           </div>
         </div>
-        
+
         <PhotoUpload
           photo={modal.photo}
           onPhotoChange={(photo) => onModalChange({ photo })}
           placeholder="Перетащите новое фото или нажмите для выбора"
         />
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Годы жизни:</label>
           <input
@@ -905,7 +1160,7 @@ export const EditPersonModal = ({
             placeholder="например: 1980-н.в. или 1950-2020"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Профессия:</label>
           <input
@@ -916,7 +1171,7 @@ export const EditPersonModal = ({
             placeholder="Введите профессию"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Место рождения:</label>
           <input
@@ -927,7 +1182,7 @@ export const EditPersonModal = ({
             placeholder="Введите место рождения"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Биография:</label>
           <textarea
@@ -937,7 +1192,7 @@ export const EditPersonModal = ({
             placeholder="Краткая биография персоны"
           />
         </div>
-        
+
         <div style={STYLES.modalButtons}>
           <button
             onClick={onClose}
@@ -947,8 +1202,8 @@ export const EditPersonModal = ({
           </button>
           <button
             onClick={onConfirm}
-            style={{ 
-              ...STYLES.button, 
+            style={{
+              ...STYLES.button,
               ...STYLES.greenButton,
               opacity: !modal.name.trim() ? 0.5 : 1,
               cursor: !modal.name.trim() ? 'not-allowed' : 'pointer'
@@ -964,16 +1219,16 @@ export const EditPersonModal = ({
 };
 
 // Модальное окно добавления супруга
-export const AddSpouseModal = ({ 
-  modal, 
-  onModalChange, 
-  onClose, 
-  onStartSelection, 
-  onConfirm 
+export const AddSpouseModal = ({
+  modal,
+  onModalChange,
+  onClose,
+  onStartSelection,
+  onConfirm
 }) => {
   // Блокируем скролл страницы при открытии модального окна
   useBodyScrollLock(modal.isOpen);
-  
+
   if (!modal.isOpen) return null;
 
   return (
@@ -990,7 +1245,7 @@ export const AddSpouseModal = ({
             ×
           </button>
         </h2>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>ФИО:</label>
           <input
@@ -1001,7 +1256,7 @@ export const AddSpouseModal = ({
             placeholder="Введите полное имя"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Пол:</label>
           <div style={STYLES.radioGroup}>
@@ -1027,12 +1282,12 @@ export const AddSpouseModal = ({
             </label>
           </div>
         </div>
-        
+
         <PhotoUpload
           photo={modal.photo}
           onPhotoChange={(photo) => onModalChange({ photo })}
         />
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Годы жизни:</label>
           <input
@@ -1043,7 +1298,7 @@ export const AddSpouseModal = ({
             placeholder="например: 1980-н.в. или 1950-2020"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Профессия:</label>
           <input
@@ -1054,7 +1309,7 @@ export const AddSpouseModal = ({
             placeholder="Введите профессию"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Место рождения:</label>
           <input
@@ -1065,7 +1320,7 @@ export const AddSpouseModal = ({
             placeholder="Введите место рождения"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Биография:</label>
           <textarea
@@ -1075,7 +1330,7 @@ export const AddSpouseModal = ({
             placeholder="Краткая биография персоны"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Персона для добавления супруга(-и):</label>
           {modal.targetPersonId ? (
@@ -1094,7 +1349,7 @@ export const AddSpouseModal = ({
             После нажатия на кнопку, выберите карточку персоны на дереве.
           </div>
         </div>
-        
+
         <div style={STYLES.modalButtons}>
           <button
             onClick={onClose}
@@ -1104,8 +1359,8 @@ export const AddSpouseModal = ({
           </button>
           <button
             onClick={onConfirm}
-            style={{ 
-              ...STYLES.button, 
+            style={{
+              ...STYLES.button,
               ...STYLES.greenButton,
               opacity: !modal.name.trim() || !modal.targetPersonId ? 0.5 : 1,
               cursor: !modal.name.trim() || !modal.targetPersonId ? 'not-allowed' : 'pointer'
@@ -1121,16 +1376,16 @@ export const AddSpouseModal = ({
 };
 
 // Модальное окно добавления ребенка
-export const AddChildModal = ({ 
-  modal, 
-  onModalChange, 
-  onClose, 
-  onStartSelection, 
-  onConfirm 
+export const AddChildModal = ({
+  modal,
+  onModalChange,
+  onClose,
+  onStartSelection,
+  onConfirm
 }) => {
   // Блокируем скролл страницы при открытии модального окна
   useBodyScrollLock(modal.isOpen);
-  
+
   if (!modal.isOpen) return null;
 
   return (
@@ -1147,7 +1402,7 @@ export const AddChildModal = ({
             ×
           </button>
         </h2>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>ФИО:</label>
           <input
@@ -1158,7 +1413,7 @@ export const AddChildModal = ({
             placeholder="Введите полное имя"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Пол:</label>
           <div style={STYLES.radioGroup}>
@@ -1186,12 +1441,12 @@ export const AddChildModal = ({
             </label>
           </div>
         </div>
-        
+
         <PhotoUpload
           photo={modal.photo}
           onPhotoChange={(photo) => onModalChange({ photo })}
         />
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Годы жизни:</label>
           <input
@@ -1202,7 +1457,7 @@ export const AddChildModal = ({
             placeholder="например: 2005-н.в. или 1950-2020"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Профессия:</label>
           <input
@@ -1213,7 +1468,7 @@ export const AddChildModal = ({
             placeholder="Введите профессию"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Место рождения:</label>
           <input
@@ -1224,7 +1479,7 @@ export const AddChildModal = ({
             placeholder="Введите место рождения"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Биография:</label>
           <textarea
@@ -1234,7 +1489,7 @@ export const AddChildModal = ({
             placeholder="Краткая биография персоны"
           />
         </div>
-        
+
         <div style={STYLES.formGroup}>
           <label style={STYLES.label}>Родители:</label>
           {modal.parentId ? (
@@ -1250,7 +1505,7 @@ export const AddChildModal = ({
             </button>
           )}
         </div>
-        
+
         <div style={STYLES.modalButtons}>
           <button
             onClick={onClose}
@@ -1260,8 +1515,8 @@ export const AddChildModal = ({
           </button>
           <button
             onClick={onConfirm}
-            style={{ 
-              ...STYLES.button, 
+            style={{
+              ...STYLES.button,
               ...STYLES.greenButton,
               opacity: !modal.name.trim() || !modal.parentId ? 0.5 : 1,
               cursor: !modal.name.trim() || !modal.parentId ? 'not-allowed' : 'pointer'
