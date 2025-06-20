@@ -1,6 +1,6 @@
 // Frontend\src\components\PersonNode.jsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NODE_STYLES } from '../constants/treeConstants';
 import { findPersonById } from '../utils/familyUtils';
 
@@ -16,6 +16,13 @@ const PersonNode = ({
   onNodeClick,
   onBranchToggle
 }) => {
+  // НОВОЕ: Состояние только для tooltip иконки дерева
+  const [showBranchTooltip, setShowBranchTooltip] = useState(false);
+  
+  // НОВОЕ: Состояние для обработки touch-событий
+  const [touchStartTime, setTouchStartTime] = useState(0);
+  const [touchMoved, setTouchMoved] = useState(false);
+
   if (!node || !node.id || typeof node.type !== 'string') {
     return null;
   }
@@ -115,7 +122,39 @@ const PersonNode = ({
     opacity: elementOpacity,
     pointerEvents: 'none'
   };
-  
+
+  // НОВЫЕ ФУНКЦИИ: Обработка touch-событий для мобильных устройств
+  const handleTouchStart = (e) => {
+    e.stopPropagation(); // Предотвращаем всплытие к SVG
+    setTouchStartTime(Date.now());
+    setTouchMoved(false);
+  };
+
+  const handleTouchMove = (e) => {
+    e.stopPropagation();
+    setTouchMoved(true);
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touchDuration = Date.now() - touchStartTime;
+    
+    // Считаем это кликом, если касание было коротким и без движения
+    if (touchDuration < 500 && !touchMoved) {
+      onNodeClick(e, node.id, node.type, node.name);
+    }
+  };
+
+  // УЛУЧШЕННАЯ функция обработки клика мышью
+  const handleMouseClick = (e) => {
+    // Проверяем, что это не touch-устройство
+    if (e.pointerType !== 'touch') {
+      onNodeClick(e, node.id, node.type, node.name);
+    }
+  };
+
   return (
     <g 
       style={{
@@ -140,7 +179,10 @@ const PersonNode = ({
           transition: 'fill 0.25s ease, stroke 0.25s ease, stroke-width 0.25s ease, opacity 0.25s ease',
           opacity: elementOpacity
         }}
-        onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
+        onClick={handleMouseClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
       
       {/* Фотография */}
@@ -153,7 +195,10 @@ const PersonNode = ({
           href={node.photo}
           clipPath="circle(30px at 30px 30px)"
           style={imageStyle}
-          onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
+          onClick={handleMouseClick}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           preserveAspectRatio="xMidYMid slice"
         />
       ) : (
@@ -166,7 +211,10 @@ const PersonNode = ({
             stroke="#c0a282"
             strokeWidth={1}
             style={{ cursor: cursorStyle }}
-            onClick={(e) => onNodeClick(e, node.id, node.type, node.name)}
+            onClick={handleMouseClick}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
           <text
             x={node.width / 2}
@@ -200,6 +248,21 @@ const PersonNode = ({
           // Для супругов тоже используем ID основной персоны
           onBranchToggle(normalizedId);
         }}
+        onTouchStart={(e) => {
+          e.stopPropagation();
+          setTouchStartTime(Date.now());
+          setTouchMoved(false);
+        }}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const touchDuration = Date.now() - touchStartTime;
+          if (touchDuration < 500 && !touchMoved) {
+            onBranchToggle(normalizedId);
+          }
+        }}
+        onMouseEnter={() => setShowBranchTooltip(true)}
+        onMouseLeave={() => setShowBranchTooltip(false)}
       >
         <circle
           cx={node.width - 20}
@@ -291,6 +354,35 @@ const PersonNode = ({
       >
         {node.lifeYears || 'Годы не указаны'}
       </text>
+
+      {/* ОБНОВЛЕННЫЙ tooltip для иконки дерева - в стиле сайта и центрированный */}
+      {showBranchTooltip && ((isHovered && !isFiltered) || isBranchSelected) && (
+        <foreignObject
+          x={node.width - 110}
+          y={-15}
+          width={200}
+          height={30}
+          style={{ pointerEvents: 'none', overflow: 'visible' }}
+        >
+          <div style={{
+            backgroundColor: '#c0a282',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '6px',
+            fontSize: '10px',
+            fontFamily: 'Montserrat, sans-serif',
+            fontWeight: '500',
+            textAlign: 'center',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 12px rgba(192, 162, 130, 0.3)',
+            width: 'fit-content',
+            margin: '-5px auto 0 auto',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+          }}>
+            Показать прямых родственников
+          </div>
+        </foreignObject>
+      )}
     </g>
   );
 };

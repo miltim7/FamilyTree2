@@ -1,6 +1,6 @@
 // Frontend\src\components\TreeConnections.jsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { NODE_STYLES } from '../constants/treeConstants';
 
 const TreeConnections = ({ 
@@ -11,6 +11,9 @@ const TreeConnections = ({
   onHideGenerations, // НОВОЕ: функция скрытия поколений
   shouldShowNode
 }) => {
+  // НОВОЕ: Состояние для tooltip'ов
+  const [hoveredButton, setHoveredButton] = useState(null);
+
   if (!connections || !Array.isArray(connections)) {
     return null;
   }
@@ -64,6 +67,10 @@ const TreeConnections = ({
             }
           }
         }
+
+        const isButtonHovered = hoveredButton === idx;
+        const isButtonVisible = shouldShowToggleButton(conn) && lineOpacity > 0.5;
+        const isHidden = conn.isHidden || (hiddenFromLevel !== null && hiddenFromLevel <= conn.level);
         
         return (
           <g key={`conn-group-${idx}`}>
@@ -110,7 +117,7 @@ const TreeConnections = ({
                 key={`toggle-${idx}`}
                 style={{
                   ...NODE_STYLES.lineToggleButton,
-                  opacity: shouldShowToggleButton(conn) && lineOpacity > 0.5 ? 1 : 0,
+                  opacity: isButtonVisible ? 1 : 0,
                   transition: 'opacity 0.3s ease'
                 }}
                 onClick={(e) => {
@@ -118,8 +125,14 @@ const TreeConnections = ({
                   // НОВОЕ: Вызываем функцию скрытия поколений по уровню
                   onHideGenerations(conn.level);
                 }}
-                onMouseEnter={() => setHoveredPerson(conn.nodeId)}
-                onMouseLeave={() => setHoveredPerson(null)}
+                onMouseEnter={() => {
+                  setHoveredPerson(conn.nodeId);
+                  setHoveredButton(idx);
+                }}
+                onMouseLeave={() => {
+                  setHoveredPerson(null);
+                  setHoveredButton(null);
+                }}
               >
                 <circle
                   cx={conn.toggleButtonX}
@@ -129,7 +142,7 @@ const TreeConnections = ({
                 />
                 
                 {/* ОБНОВЛЕННАЯ логика иконки */}
-                {conn.isHidden || (hiddenFromLevel !== null && hiddenFromLevel <= conn.level) ? (
+                {isHidden ? (
                   // Плюс для показа
                   <g>
                     <line
@@ -156,6 +169,35 @@ const TreeConnections = ({
                     y2={conn.toggleButtonY}
                     style={NODE_STYLES.lineToggleButtonIcon}
                   />
+                )}
+
+                {/* ОБНОВЛЕННЫЙ tooltip для кнопок +/- - в стиле сайта */}
+                {isButtonHovered && isButtonVisible && (
+                  <foreignObject
+                    x={conn.toggleButtonX - 100}
+                    y={conn.toggleButtonY - 45}
+                    width={200}
+                    height={30}
+                    style={{ pointerEvents: 'none', overflow: 'visible' }}
+                  >
+                    <div style={{
+                      backgroundColor: '#c0a282',
+                      color: 'white',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontFamily: 'Montserrat, sans-serif',
+                      fontWeight: '500',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      boxShadow: '0 4px 12px rgba(192, 162, 130, 0.3)',
+                      width: 'fit-content',
+                      margin: '0 auto',
+                      border: '1px solid rgba(255, 255, 255, 0.2)'
+                    }}>
+                      {isHidden ? 'Показать скрытые поколения' : 'Скрыть поколения ниже'}
+                    </div>
+                  </foreignObject>
                 )}
               </g>
             )}
